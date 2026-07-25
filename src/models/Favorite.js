@@ -1,0 +1,40 @@
+const { Model } = require('sequelize');
+
+module.exports = (sequelize, DataTypes) => {
+  class Favorite extends Model {
+    static associate(models) {
+      Favorite.belongsTo(models.User, { foreignKey: 'user_id' });
+      Favorite.belongsTo(models.File, { foreignKey: 'file_id' });
+      Favorite.belongsTo(models.Folder, { foreignKey: 'folder_id' });
+    }
+  }
+  
+  Favorite.init({
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+      allowNull: false
+    },
+    user_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
+    file_id: {
+      type: DataTypes.INTEGER
+    },
+    folder_id: {
+      type: DataTypes.INTEGER
+    }
+  }, {
+    sequelize,
+    modelName: 'Favorite',
+    tableName: 'favorites',
+    underscored: true,
+    timestamps: true,
+    createdAt: 'created_at',
+    updatedAt: false
+  });
+  
+  return Favorite;
+};
