@@ -1,0 +1,24 @@
+info:
+  name: Upload pre-signed URL
+  type: http
+  seq: 4
+
+http:
+  method: POST
+  url: "{{host}}/api/v1/files/presign-upload"
+  body:
+    type: form-urlencoded
+    data:
+      - name: name
+        value: rijal.txt
+      - name: extension
+        value: mp4
+      - name: folder_id
+        value: "2"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
