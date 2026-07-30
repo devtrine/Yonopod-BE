@@ -1,6 +1,6 @@
 const express = require('express');
 const { requireAuth } = require('../middlewares/auth');
-const validate = require('../middlewares/validate');
+const { validate } = require('../middlewares/validate');
 const { 
   registerSchema, loginSchema, updateProfileSchema, 
   changePasswordSchema, forgotPasswordSchema, resetPasswordSchema 
@@ -15,7 +15,9 @@ router.post('/logout', requireAuth, authController.logout);
 router.get('/me', requireAuth, authController.getMe);
 router.put('/me', requireAuth, validate(updateProfileSchema), authController.updateMe);
 router.put('/me/password', requireAuth, validate(changePasswordSchema), authController.changePassword);
-router.post('/forgot-password', validate(forgotPasswordSchema), authController.forgotPassword);
-router.post('/reset-password', validate(resetPasswordSchema), authController.resetPassword);
+
+// kayanya ga sekarang.
+// router.post('/forgot-password', validate(forgotPasswordSchema), authController.forgotPassword);
+// router.post('/reset-password', validate(resetPasswordSchema), authController.resetPassword);
 
 module.exports = router;

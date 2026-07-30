@@ -4,12 +4,12 @@ module.exports = (sequelize, DataTypes) => {
   class File extends Model {
     static associate(models) {
       File.belongsTo(models.User, { foreignKey: 'user_id' });
-      File.belongsTo(models.Folder, { foreignKey: 'folder_id' });
+      File.belongsTo(models.Folder, { foreignKey: 'folder_id', as: "folder" });
       File.hasMany(models.FileTag, { foreignKey: 'file_id' });
       File.hasMany(models.Favorite, { foreignKey: 'file_id' });
       File.hasMany(models.RecentFile, { foreignKey: 'file_id' });
       File.hasMany(models.Share, { foreignKey: 'file_id' });
-      File.belongsToMany(models.Tag, { through: models.FileTag, foreignKey: 'file_id' });
+      File.belongsToMany(models.Tag, { through: models.FileTag, foreignKey: 'file_id', as: "tags" });
     }
   }
   

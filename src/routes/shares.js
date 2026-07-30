@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { requireAuth } = require('../middlewares/auth');
-const validate = require('../middlewares/validate');
+const { validate } = require('../middlewares/validate');
 const sharesController = require('../controllers/sharesController');
 const { createShareSchema, updateShareSchema, verifySharePasswordSchema } = require('../validators/sharesValidator');
 

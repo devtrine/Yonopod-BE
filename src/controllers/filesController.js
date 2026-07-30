@@ -23,8 +23,8 @@ const listFiles = async (req, res, next) => {
     const { count, rows } = await File.findAndCountAll({
       where: whereClause,
       include: [
-        { model: Folder, as: 'folder' },
-        { model: Tag, as: 'tags', through: { attributes: [] } }
+        { model: Folder, as: "folder" },
+        { model: Tag, as: "tags", through: { attributes: [] } }
       ],
       order: [[sort_by, order]],
       limit,
@@ -43,8 +43,8 @@ const getFile = async (req, res, next) => {
     const file = await File.findOne({
       where: { id, user_id: req.user.id, deleted_at: null },
       include: [
-        { model: Folder, as: 'folder' },
-        { model: Tag, as: 'tags', through: { attributes: [] } }
+        { model: Folder, as: "folder" },
+        { model: Tag, as: "tags", through: { attributes: [] } }
       ]
     });
 

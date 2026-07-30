@@ -1,6 +1,6 @@
 const express = require('express');
 const { requireAuth } = require('../middlewares/auth');
-const validate = require('../middlewares/validate');
+const { validate } = require('../middlewares/validate');
 const { 
   createFolderSchema, updateFolderSchema, 
   lockFolderSchema, unlockFolderSchema, listFoldersQuery 

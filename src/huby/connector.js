@@ -31,6 +31,10 @@ exports.getPresignedDownloadUrl = async (key, expiresIn = DEFAULT_EXPIRY) => {
   return await getSignedUrl(s3Client, command, { expiresIn });
 };
 
+exports.generatePresignedUploadUrl = async (key, content_type) => {
+  return "http://linux-rijal"
+}
+
 exports.deleteFile = async (key) => {
   const command = new DeleteObjectCommand({
     Bucket: DEFAULT_BUCKET,

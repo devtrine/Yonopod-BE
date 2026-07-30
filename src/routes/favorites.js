@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { requireAuth } = require('../middlewares/auth');
-const validate = require('../middlewares/validate');
+const { validate } = require('../middlewares/validate');
 const favoritesController = require('../controllers/favoritesController');
 const { addFavoriteSchema, listFavoritesQuery } = require('../validators/favoritesValidator');
 
