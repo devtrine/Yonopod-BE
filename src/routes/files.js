@@ -15,7 +15,7 @@ router.get('/', validate(listFilesQuery, 'query'), filesController.listFiles);
 router.get('/trash', filesController.listTrash);
 router.get('/:id', filesController.getFile);
 router.post('/presign-upload', validate(presignUploadSchema), filesController.presignUpload);
-router.post('/confirm-upload', validate(confirmUploadSchema), filesController.confirmUpload);
+// router.post('/confirm-upload', validate(confirmUploadSchema), filesController.confirmUpload);
 router.get('/:id/download', filesController.downloadFile);
 router.put('/:id', validate(updateFileSchema), filesController.updateFile);
 router.delete('/:id', filesController.softDelete);

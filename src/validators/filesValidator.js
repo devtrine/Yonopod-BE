@@ -1,8 +1,8 @@
 const Joi = require('joi');
 
 const presignUploadSchema = Joi.object({
-  filename: Joi.string().required(),
-  content_type: Joi.string().required(),
+  name: Joi.string().required(),
+  extension: Joi.string().required(),
   folder_id: Joi.number().integer().optional().allow(null),
 });
 

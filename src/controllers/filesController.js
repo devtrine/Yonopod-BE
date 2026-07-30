@@ -57,14 +57,23 @@ const getFile = async (req, res, next) => {
 
 const presignUpload = async (req, res, next) => {
   try {
-    const { filename, content_type, folder_id } = req.body;
+    const { name, extension, folder_id = null } = req.body;
     const uuid = uuidv4();
     const folderPath = folder_id ? folder_id : 'root';
-    const fileKey = `${req.user.id}/${folderPath}/${uuid}-${filename}`;
+    const fileKey = `${req.user.id}/${folderPath}/${uuid}-${name}`;
 
-    const uploadUrl = await huby.generatePresignedUploadUrl(fileKey, content_type);
+    const uploadUrl = await huby.generatePresignedUploadUrl(fileKey);
 
-    return successResponse(res, { uploadUrl, fileKey }, 'Presigned URL generated successfully');
+    const file = await File.create({
+      user_id: req.user.id,
+      file_path: fileKey,
+      created_at: new Date(),
+      folder_id,
+      name,
+      extension
+    })
+
+    return successResponse(res, { uploadUrl, file }, 'Presigned URL generated successfully');
   } catch (error) {
     next(error);
   }
