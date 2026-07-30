@@ -41,11 +41,6 @@ module.exports = (sequelize, DataTypes) => {
     vault_password: {
       type: DataTypes.STRING(255)
     },
-    size: {
-      type: DataTypes.BIGINT,
-      allowNull: false,
-      defaultValue: 0
-    }
   }, {
     sequelize,
     modelName: 'Folder',

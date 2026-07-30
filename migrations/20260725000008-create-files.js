@@ -33,24 +33,12 @@ module.exports = {
         type: Sequelize.STRING(255),
         allowNull: false,
       },
-      original_name: {
-        type: Sequelize.STRING(255),
-        allowNull: false,
-      },
       file_path: {
         type: Sequelize.STRING(500),
         allowNull: false,
       },
-      mime_type: {
-        type: Sequelize.STRING(100),
-      },
       extension: {
         type: Sequelize.STRING(20),
-      },
-      size: {
-        type: Sequelize.BIGINT,
-        allowNull: false,
-        defaultValue: 0,
       },
       checksum: {
         type: Sequelize.STRING(255),

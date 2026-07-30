@@ -23,8 +23,6 @@ const listFolders = async (req, res, next) => {
       offset
     });
     
-    // In a real app we might do subqueries or aggregates for size and file count
-    // For now we'll just return the folders
     return paginatedResponse(res, rows, count, page, limit, 'Folders retrieved successfully');
   } catch (error) {
     next(error);

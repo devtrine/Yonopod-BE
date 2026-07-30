@@ -31,24 +31,12 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING(255),
       allowNull: false
     },
-    original_name: {
-      type: DataTypes.STRING(255),
-      allowNull: false
-    },
     file_path: {
       type: DataTypes.STRING(500),
       allowNull: false
     },
-    mime_type: {
-      type: DataTypes.STRING(100)
-    },
     extension: {
       type: DataTypes.STRING(20)
-    },
-    size: {
-      type: DataTypes.BIGINT,
-      allowNull: false,
-      defaultValue: 0
     },
     checksum: {
       type: DataTypes.STRING(255)

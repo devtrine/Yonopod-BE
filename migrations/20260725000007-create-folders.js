@@ -44,11 +44,6 @@ module.exports = {
       vault_password: {
         type: Sequelize.STRING(255),
       },
-      size: {
-        type: Sequelize.BIGINT,
-        allowNull: false,
-        defaultValue: 0,
-      },
       created_at: {
         allowNull: false,
         type: Sequelize.DATE,

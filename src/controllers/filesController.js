@@ -7,7 +7,7 @@ const { Op } = require('sequelize');
 
 const listFiles = async (req, res, next) => {
   try {
-    const { page = 1, limit = 20, folder_id, extension, mime_type, search, sort_by = 'created_at', order = 'DESC' } = req.query;
+    const { page = 1, limit = 20, folder_id, extension, search, sort_by = 'created_at', order = 'DESC' } = req.query;
     const offset = (page - 1) * limit;
 
     const whereClause = {
@@ -17,7 +17,6 @@ const listFiles = async (req, res, next) => {
 
     if (folder_id !== undefined) whereClause.folder_id = folder_id;
     if (extension) whereClause.extension = extension;
-    if (mime_type) whereClause.mime_type = mime_type;
     if (search) whereClause.name = { [Op.iLike]: `%${search}%` };
 
     const { count, rows } = await File.findAndCountAll({
@@ -73,22 +72,18 @@ const presignUpload = async (req, res, next) => {
 
 const confirmUpload = async (req, res, next) => {
   try {
-    const { file_key, original_name, name, mime_type, extension, size, folder_id, checksum } = req.body;
+    const { file_key, name, extension, folder_id, checksum } = req.body;
 
     const file = await File.create({
       user_id: req.user.id,
       folder_id,
-      name: name || original_name,
-      original_name,
+      name,
       file_path: file_key,
-      mime_type,
       extension,
-      size,
       checksum,
       created_at: new Date()
     });
 
-    req.user.storage_used = BigInt(req.user.storage_used || 0) + BigInt(size);
     await req.user.save();
 
     return successResponse(res, file, 'File uploaded and confirmed successfully', 201);
@@ -187,7 +182,6 @@ const permanentDelete = async (req, res, next) => {
       await huby.deleteFile(file.file_path);
     }
     
-    req.user.storage_used = BigInt(req.user.storage_used || 0) - BigInt(file.size);
     if (req.user.storage_used < 0n) req.user.storage_used = 0n;
     await req.user.save();
 

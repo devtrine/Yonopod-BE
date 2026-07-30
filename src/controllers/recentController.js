@@ -14,7 +14,7 @@ const listRecent = async (req, res, next) => {
       include: [{
         model: File,
         as: 'file',
-        attributes: ['id', 'name', 'mime_type', 'extension', 'size']
+        attributes: ['id', 'name', 'extension']
       }],
       order: [['accessed_at', 'DESC']]
     });

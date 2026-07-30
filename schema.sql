@@ -105,8 +105,6 @@ CREATE TABLE IF NOT EXISTS "folders" (
 	-- Folder Lock / Private Vault
 	"is_locked" boolean NOT NULL DEFAULT false,
 	"vault_password" varchar(255),
-	-- Folder Size Analyzer
-	"size" bigint NOT NULL DEFAULT 0,
 	"created_at" timestamp NOT NULL,
 	"updated_at" timestamp,
 	"deleted_at" timestamp,
@@ -116,7 +114,6 @@ CREATE TABLE IF NOT EXISTS "folders" (
 COMMENT ON TABLE folders IS 'Folder Management';
 COMMENT ON COLUMN folders.parent_id IS 'Nested folder (self reference)';
 COMMENT ON COLUMN folders.is_locked IS 'Folder Lock / Private Vault';
-COMMENT ON COLUMN folders.size IS 'Folder Size Analyzer';
 
 
 CREATE TABLE IF NOT EXISTS "files" (
@@ -124,12 +121,9 @@ CREATE TABLE IF NOT EXISTS "files" (
 	"user_id" int NOT NULL,
 	"folder_id" int,
 	"name" varchar(255) NOT NULL,
-	"original_name" varchar(255) NOT NULL,
 	"file_path" varchar(500) NOT NULL,
-	"mime_type" varchar(100),
 	-- Statistik berdasarkan tipe file
 	"extension" varchar(20),
-	"size" bigint NOT NULL DEFAULT 0,
 	"checksum" varchar(255),
 	-- Preview Gambar & Video
 	"thumbnail_path" varchar(500),
