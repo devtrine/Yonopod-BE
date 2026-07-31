@@ -150,11 +150,9 @@ const softDelete = async (req, res, next) => {
     });
 
     if (!file) throw new NotFoundError('File not found');
+    await file.destroy();
 
-    file.deleted_at = new Date();
-    await file.save();
-
-    return successResponse(res, null, 'File soft deleted successfully');
+    return successResponse(res, file, 'File soft deleted successfully');
   } catch (error) {
     next(error);
   }
@@ -164,13 +162,13 @@ const restore = async (req, res, next) => {
   try {
     const { id } = req.params;
     const file = await File.findOne({
-      where: { id, user_id: req.user.id, deleted_at: { [Op.not]: null } }
+      where: { id, user_id: req.user.id, deleted_at: { [Op.not]: null } },
+      paranoid: false
     });
 
     if (!file) throw new NotFoundError('File not found in trash');
 
-    file.deleted_at = null;
-    await file.save();
+    await file.restore();
 
     return successResponse(res, null, 'File restored successfully');
   } catch (error) {
@@ -213,6 +211,7 @@ const listTrash = async (req, res, next) => {
         deleted_at: { [Op.not]: null }
       },
       order: [['deleted_at', 'DESC']],
+      paranoid: false,
       limit,
       offset
     });
