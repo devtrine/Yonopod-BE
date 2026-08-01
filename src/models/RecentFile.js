@@ -3,11 +3,12 @@ const { Model } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
   class RecentFile extends Model {
     static associate(models) {
-      RecentFile.belongsTo(models.User, { foreignKey: 'user_id' });
-      RecentFile.belongsTo(models.File, { foreignKey: 'file_id' });
+      RecentFile.belongsTo(models.User, { foreignKey: 'user_id', as: 'user' });
+      // 💡 TAMBAHKAN alias 'as: file' di sini
+      RecentFile.belongsTo(models.File, { foreignKey: 'file_id', as: 'file' });
     }
   }
-  
+
   RecentFile.init({
     id: {
       type: DataTypes.INTEGER,
@@ -25,7 +26,8 @@ module.exports = (sequelize, DataTypes) => {
     },
     accessed_at: {
       type: DataTypes.DATE,
-      allowNull: false
+      allowNull: false,
+      defaultValue: DataTypes.NOW
     }
   }, {
     sequelize,
@@ -34,6 +36,6 @@ module.exports = (sequelize, DataTypes) => {
     underscored: true,
     timestamps: false
   });
-  
+
   return RecentFile;
 };
