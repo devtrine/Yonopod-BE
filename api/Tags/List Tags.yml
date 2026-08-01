@@ -1,0 +1,22 @@
+info:
+  name: List Tags
+  type: http
+  seq: 2
+
+http:
+  method: GET
+  url: "{{host}}/api/v1/tags?page=1&limit=2"
+  params:
+    - name: page
+      value: "1"
+      type: query
+    - name: limit
+      value: "2"
+      type: query
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

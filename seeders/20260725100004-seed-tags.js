@@ -13,11 +13,11 @@ module.exports = {
     if (!admin || !john) return;
 
     await queryInterface.bulkInsert('tags', [
-      { id: 1, user_id: admin.id, name: 'Important', color: 'red', created_at: new Date() },
-      { id: 2, user_id: admin.id, name: 'Work', color: 'blue', created_at: new Date() },
-      { id: 3, user_id: admin.id, name: 'Personal', color: 'green', created_at: new Date() },
-      { id: 4, user_id: john.id, name: 'Urgent', color: 'orange', created_at: new Date() },
-      { id: 5, user_id: john.id, name: 'Reference', color: 'purple', created_at: new Date() }
+      { user_id: admin.id, name: 'Important', color: 'red', created_at: new Date() },
+      { user_id: admin.id, name: 'Work', color: 'blue', created_at: new Date() },
+      { user_id: admin.id, name: 'Personal', color: 'green', created_at: new Date() },
+      { user_id: john.id, name: 'Urgent', color: 'orange', created_at: new Date() },
+      { user_id: john.id, name: 'Reference', color: 'purple', created_at: new Date() }
     ]);
 
     await queryInterface.bulkInsert('file_tags', [

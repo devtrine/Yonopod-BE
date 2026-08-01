@@ -1,0 +1,22 @@
+info:
+  name: Update Tags
+  type: http
+  seq: 1
+
+http:
+  method: PUT
+  url: "{{host}}/api/v1/tags/6"
+  body:
+    type: json
+    data: |
+      {
+        "name": "Dokumen Negara",
+        "color": "#FF1210"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

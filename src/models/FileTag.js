@@ -3,8 +3,8 @@ const { Model } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
   class FileTag extends Model {
     static associate(models) {
-      FileTag.belongsTo(models.File, { foreignKey: 'file_id' });
-      FileTag.belongsTo(models.Tag, { foreignKey: 'tag_id' });
+      FileTag.belongsTo(models.File, { foreignKey: 'file_id', as: 'file' });
+      FileTag.belongsTo(models.Tag, { foreignKey: 'tag_id', as: 'tag' });
     }
   }
   
