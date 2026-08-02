@@ -5,7 +5,13 @@ info:
 
 http:
   method: PUT
-  url: ""
+  url: http://localhost:5000/api/v1/folders/11
+  body:
+    type: json
+    data: |-
+      {
+        "name":"Reel"
+      }
   auth: inherit
 
 settings:

@@ -5,7 +5,13 @@ info:
 
 http:
   method: POST
-  url: ""
+  url: http://localhost:5000/api/v1/folders/11/lock
+  body:
+    type: json
+    data: |-
+      {
+        "vault_password":"jkl123"
+      }
   auth: inherit
 
 settings:
