@@ -1,0 +1,21 @@
+info:
+  name: "Add Favorites "
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{host}}/api/v1/favorites"
+  body:
+    type: json
+    data: |
+      {
+        "folder_id": 1
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

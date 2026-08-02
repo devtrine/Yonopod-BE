@@ -4,8 +4,8 @@ module.exports = (sequelize, DataTypes) => {
   class Favorite extends Model {
     static associate(models) {
       Favorite.belongsTo(models.User, { foreignKey: 'user_id' });
-      Favorite.belongsTo(models.File, { foreignKey: 'file_id' });
-      Favorite.belongsTo(models.Folder, { foreignKey: 'folder_id' });
+      Favorite.belongsTo(models.File, { foreignKey: 'file_id', as: 'file' });
+      Favorite.belongsTo(models.Folder, { foreignKey: 'folder_id', as: 'folder' });
     }
   }
   

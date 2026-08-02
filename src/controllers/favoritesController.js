@@ -27,7 +27,11 @@ const listFavorites = async (req, res, next) => {
       order: [['created_at', 'DESC']]
     });
 
-    return res.json(paginatedResponse(rows, parseInt(page), parseInt(limit), count));
+    return paginatedResponse(res, rows, {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      total: count
+    }, 'Favorites retrieved successfully', 200);
   } catch (error) {
     next(error);
   }
@@ -66,7 +70,7 @@ const addFavorite = async (req, res, next) => {
       await File.update({ is_favorite: true }, { where: { id: file_id } });
     }
 
-    return res.status(201).json(successResponse(favorite, 'Added to favorites successfully'));
+    return successResponse(res, favorite, 'Added to favorites successfully', 201);
   } catch (error) {
     next(error);
   }
@@ -90,7 +94,7 @@ const removeFavorite = async (req, res, next) => {
 
     await favorite.destroy();
 
-    return res.json(successResponse(null, 'Removed from favorites successfully'));
+    return successResponse(res, null, 'Removed from favorites successfully', 201);
   } catch (error) {
     next(error);
   }

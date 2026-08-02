@@ -4,13 +4,13 @@ const { NotFoundError, ValidationError, ForbiddenError } = require('../utils/err
 
 const listTags = async (req, res, next) => {
   try {
-    const { page, limit } = req.query;
-    const offset = (page - 1) * limit;
+    const { page = 1, limit = 10 } = req.query;
+    const offset = (parseInt(page) - 1) * parseInt(limit);
 
-    const { count, rows } = await Tag.findAndCountAll({
+    const rows = await Tag.findAll({
       where: { user_id: req.user.id },
-      limit,
-      offset,
+      limit: parseInt(limit),
+      offset: parseInt(offset),
       include: [{
         model: FileTag,
         as: 'file_tags',
@@ -29,7 +29,18 @@ const listTags = async (req, res, next) => {
       subQuery: false
     });
 
-    return res.json(paginatedResponse(rows, page, limit, count.length || count));
+    const totalItems = await Tag.count({
+      where: { user_id: req.user.id }
+    });
+
+    const totalPages = Math.ceil(totalItems / parseInt(limit));
+
+    return paginatedResponse(res, rows, {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      total: totalItems,
+      totalPages: totalPages
+    }, 'Tags retrieved successfully');
   } catch (error) {
     next(error);
   }
@@ -54,7 +65,7 @@ const createTag = async (req, res, next) => {
       created_at: new Date()
     });
 
-    return res.status(201).json(successResponse(tag, 'Tag created successfully'));
+    return successResponse(res, tag, 'Tag created successfully', 201);
   } catch (error) {
     next(error);
   }
@@ -88,7 +99,7 @@ const updateTag = async (req, res, next) => {
 
     await tag.save();
 
-    return res.json(successResponse(tag, 'Tag updated successfully'));
+    return successResponse(res, tag, 'Tag updated successfully', 201);
   } catch (error) {
     next(error);
   }
@@ -108,7 +119,7 @@ const deleteTag = async (req, res, next) => {
 
     await tag.destroy();
 
-    return res.json(successResponse(null, 'Tag deleted successfully'));
+    return successResponse(res, null, 'Tag deleted successfully', 201);
   } catch (error) {
     next(error);
   }
@@ -139,7 +150,7 @@ const addTagToFile = async (req, res, next) => {
     });
 
     if (existingFileTag) {
-      return res.status(409).json(errorResponse('File is already tagged with this tag', 409));
+      return errorResponse(res, 'File is already tagged with this tag', 409);
     }
 
     await FileTag.create({
@@ -147,7 +158,7 @@ const addTagToFile = async (req, res, next) => {
       file_id: fileId
     });
 
-    return res.json(successResponse(null, 'Tag added to file successfully'));
+    return successResponse(res, null, 'Tag added to file successfully', 200);
   } catch (error) {
     next(error);
   }
@@ -176,7 +187,7 @@ const removeTagFromFile = async (req, res, next) => {
 
     await fileTag.destroy();
 
-    return res.json(successResponse(null, 'Tag removed from file successfully'));
+    return successResponse(res, null, 'Tag removed from file successfully', 200);
   } catch (error) {
     next(error);
   }
@@ -209,7 +220,7 @@ const getFilesByTag = async (req, res, next) => {
 
     const files = rows.map(ft => ft.file);
 
-    return res.json(paginatedResponse(files, parseInt(page), parseInt(limit), count));
+    return paginatedResponse(res, files, { page: parseInt(page), limit: parseInt(limit), total: count }, 'Files retrieved successfully', 200);
   } catch (error) {
     next(error);
   }
