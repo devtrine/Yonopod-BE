@@ -11,7 +11,7 @@ http:
     data: |
       {
         "name": "Dokumen Negara",
-        "color": "#FF1210"
+        "color": "#FF0000"
       }
   auth: inherit
 

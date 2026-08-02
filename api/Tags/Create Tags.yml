@@ -5,7 +5,14 @@ info:
 
 http:
   method: POST
-  url: "{{baseUrl}}/api/v1/"
+  url: "{{host}}/api/v1/tags"
+  body:
+    type: json
+    data: |
+      {
+        "name": "Arsip KDMP",
+        "color": "#FF0000"
+      }
 
 settings:
   encodeUrl: true
