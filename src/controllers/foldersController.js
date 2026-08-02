@@ -1,29 +1,29 @@
 const { Folder, File } = require('../models');
-const { successResponse, paginatedResponse, errorResponse } = require('../utils/response');
-const { NotFoundError, UnauthorizedError, ForbiddenError } = require('../utils/errors');
+const { successResponse, paginatedResponse } = require('../utils/response');
+const { NotFoundError, ForbiddenError, BadRequestError } = require('../utils/errors');
 const bcrypt = require('bcrypt');
-const huby = require('../huby/connector');
-const { Op } = require('sequelize');
+const { Op, Association } = require('sequelize');
 
 const listFolders = async (req, res, next) => {
   try {
     const { parent_id, page = 1, limit = 20 } = req.query;
-    const offset = (page - 1) * limit;
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.max(1, parseInt(limit, 10) || 20);
+    const offset = (pageNum - 1) * limitNum;
 
     const whereClause = {
       user_id: req.user.id,
-      deleted_at: null,
-      parent_id: parent_id !== undefined ? parent_id : null
+      parent_id: parent_id !== undefined ? (parent_id ? parseInt(parent_id, 10) : null) : null
     };
 
     const { count, rows } = await Folder.findAndCountAll({
       where: whereClause,
       order: [['created_at', 'DESC']],
-      limit,
+      limit: limitNum,
       offset
     });
     
-    return paginatedResponse(res, rows, count, page, limit, 'Folders retrieved successfully');
+    return paginatedResponse(res, rows, count, pageNum, limitNum, 'Folders retrieved successfully');
   } catch (error) {
     next(error);
   }
@@ -32,17 +32,36 @@ const listFolders = async (req, res, next) => {
 const getFolder = async (req, res, next) => {
   try {
     const { id } = req.params;
+
+    // 1. Ambil folder TANPA include Children & Files terlebih dahulu
     const folder = await Folder.findOne({
-      where: { id, user_id: req.user.id, deleted_at: null },
+      where: { id, user_id: req.user.id }
+    });
+
+    if (!folder) {
+      throw new NotFoundError('Folder not found or has been moved to trash');
+    }
+
+    // 2. CEK: Jika folder terkunci, LANGSUNG RETURN metadata saja!
+    //    Jangan include Children atau Files.
+    if (folder.is_locked) {
+      return successResponse(
+        res, 
+        folder, 
+        'Folder is locked. Please unlock with vault password to access contents.'
+      );
+    }
+
+    // 3. Jika TIDAK terkunci (folder biasa), baru tarik isi sub-folder dan files-nya
+    const fullFolder = await Folder.findOne({
+      where: { id, user_id: req.user.id },
       include: [
-        { model: Folder, as: 'children', where: { deleted_at: null }, required: false },
-        { model: File, as: 'files', where: { deleted_at: null }, required: false }
+        { association: 'Children', required: false },
+        { association: 'Files', required: false }
       ]
     });
 
-    if (!folder) throw new NotFoundError('Folder not found');
-
-    return successResponse(res, folder, 'Folder retrieved successfully');
+    return successResponse(res, fullFolder, 'Folder retrieved successfully');
   } catch (error) {
     next(error);
   }
@@ -51,6 +70,7 @@ const getFolder = async (req, res, next) => {
 const createFolder = async (req, res, next) => {
   try {
     const { name, parent_id } = req.body;
+    if (!name) throw new BadRequestError('Folder name is required');
     
     let path = `/${name}`;
     if (parent_id) {
@@ -63,8 +83,7 @@ const createFolder = async (req, res, next) => {
       user_id: req.user.id,
       name,
       parent_id: parent_id || null,
-      path,
-      created_at: new Date()
+      path
     });
 
     return successResponse(res, folder, 'Folder created successfully', 201);
@@ -79,26 +98,51 @@ const updateFolder = async (req, res, next) => {
     const { name, parent_id } = req.body;
 
     const folder = await Folder.findOne({
-      where: { id, user_id: req.user.id, deleted_at: null }
+      where: { id, user_id: req.user.id }
     });
 
     if (!folder) throw new NotFoundError('Folder not found');
 
+    // Mencegah folder menjadi parent dari dirinya sendiri
+    if (parent_id !== undefined && parseInt(parent_id, 10) === folder.id) {
+      throw new BadRequestError('Folder cannot be set as its own parent');
+    }
+
+    const oldPath = folder.path;
     if (name !== undefined) folder.name = name;
     
     if (parent_id !== undefined) {
-      folder.parent_id = parent_id;
-      let path = `/${folder.name}`;
+      folder.parent_id = parent_id || null;
+      let newParentPath = '';
       if (parent_id) {
         const parent = await Folder.findOne({ where: { id: parent_id, user_id: req.user.id } });
         if (!parent) throw new NotFoundError('Parent folder not found');
-        path = `${parent.path || ''}/${folder.name}`;
+        newParentPath = parent.path || '';
       }
-      folder.path = path;
+      folder.path = `${newParentPath}/${folder.name}`;
+    } else if (name !== undefined && oldPath) {
+      // Jika nama berubah tapi parent_id tidak, perbarui segmen akhir path
+      const pathSegments = oldPath.split('/');
+      pathSegments[pathSegments.length - 1] = name;
+      folder.path = pathSegments.join('/');
     }
 
-    folder.updated_at = new Date();
     await folder.save();
+
+    // Opsional: Jika path berubah, perbarui sub-folder di bawahnya
+    if (oldPath && oldPath !== folder.path) {
+      const children = await Folder.findAll({
+        where: {
+          user_id: req.user.id,
+          path: { [Op.like]: `${oldPath}/%` }
+        }
+      });
+
+      for (const child of children) {
+        child.path = child.path.replace(oldPath, folder.path);
+        await child.save();
+      }
+    }
 
     return successResponse(res, folder, 'Folder updated successfully');
   } catch (error) {
@@ -110,13 +154,13 @@ const softDelete = async (req, res, next) => {
   try {
     const { id } = req.params;
     const folder = await Folder.findOne({
-      where: { id, user_id: req.user.id, deleted_at: null }
+      where: { id, user_id: req.user.id }
     });
 
     if (!folder) throw new NotFoundError('Folder not found');
 
-    folder.deleted_at = new Date();
-    await folder.save();
+    // Bawaan Sequelize paranoid: true, destroy() akan mengisi deleted_at
+    await folder.destroy();
 
     return successResponse(res, null, 'Folder soft deleted successfully');
   } catch (error) {
@@ -127,14 +171,21 @@ const softDelete = async (req, res, next) => {
 const restore = async (req, res, next) => {
   try {
     const { id } = req.params;
+    
+    // Gunakan paranoid: false untuk mencari record yang sudah terhapus
     const folder = await Folder.findOne({
-      where: { id, user_id: req.user.id, deleted_at: { [Op.not]: null } }
+      where: { 
+        id, 
+        user_id: req.user.id,
+        deleted_at: { [Op.ne]: null }
+      },
+      paranoid: false
     });
 
     if (!folder) throw new NotFoundError('Folder not found in trash');
 
-    folder.deleted_at = null;
-    await folder.save();
+    // Bawaan Sequelize paranoid: true, restore() akan mengosongkan deleted_at
+    await folder.restore();
 
     return successResponse(res, null, 'Folder restored successfully');
   } catch (error) {
@@ -146,14 +197,14 @@ const permanentDelete = async (req, res, next) => {
   try {
     const { id } = req.params;
     const folder = await Folder.findOne({
-      where: { id, user_id: req.user.id }
+      where: { id, user_id: req.user.id },
+      paranoid: false
     });
 
     if (!folder) throw new NotFoundError('Folder not found');
 
-    // In a real app we'd recursively delete children and cascade to files
-    // But assuming the DB cascade delete does this, we just delete the folder
-    await folder.destroy();
+    // force: true menghapus record secara permanen dari DB
+    await folder.destroy({ force: true });
 
     return successResponse(res, null, 'Folder permanently deleted successfully');
   } catch (error) {
@@ -165,9 +216,11 @@ const lockFolder = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { vault_password } = req.body;
+
+    if (!vault_password) throw new BadRequestError('Vault password is required');
     
     const folder = await Folder.findOne({
-      where: { id, user_id: req.user.id, deleted_at: null }
+      where: { id, user_id: req.user.id }
     });
 
     if (!folder) throw new NotFoundError('Folder not found');
@@ -187,22 +240,32 @@ const unlockFolder = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { vault_password } = req.body;
+
+    if (!vault_password) {
+      throw new BadRequestError('Vault password is required');
+    }
     
-    const folder = await Folder.findOne({
-      where: { id, user_id: req.user.id, deleted_at: null },
+    // 1. Panggil scope('withPassword') khusus di sini untuk menarik hash password
+    const folder = await Folder.scope('withPassword').findOne({
+      where: { id, user_id: req.user.id },
       include: [
-        { model: Folder, as: 'children', where: { deleted_at: null }, required: false },
-        { model: File, as: 'files', where: { deleted_at: null }, required: false }
+        { association: 'Children', required: false },
+        { association: 'Files', required: false }
       ]
     });
 
     if (!folder) throw new NotFoundError('Folder not found');
     if (!folder.is_locked) return successResponse(res, folder, 'Folder is not locked');
 
-    const isMatch = await bcrypt.compare(vault_password, folder.vault_password);
+    // 2. Verifikasi password
+    const isMatch = await bcrypt.compare(vault_password, folder.vault_password || '');
     if (!isMatch) throw new ForbiddenError('Incorrect vault password');
 
-    return successResponse(res, folder, 'Folder unlocked successfully');
+    // 3. Sanitasi objek sebelum dikirim ke FE (Double Security)
+    const folderJson = folder.toJSON();
+    delete folderJson.vault_password;
+
+    return successResponse(res, folderJson, 'Folder unlocked successfully');
   } catch (error) {
     next(error);
   }
@@ -211,21 +274,31 @@ const unlockFolder = async (req, res, next) => {
 const listTrash = async (req, res, next) => {
   try {
     const { page = 1, limit = 20 } = req.query;
-    const offset = (page - 1) * limit;
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.max(1, parseInt(limit, 10) || 20);
+    const offset = (pageNum - 1) * limitNum;
 
     const { count, rows } = await Folder.findAndCountAll({
       where: {
         user_id: req.user.id,
-        deleted_at: { [Op.not]: null }
+        deleted_at: { [Op.ne]: null } // Ambil HANYA yang deleted_at TIDAK NULL
       },
-      order: [['deleted_at', 'DESC']],
-      limit,
-      offset
+      order: [['deleted_at', 'DESC']], // Sampah terbaru di atas
+      limit: limitNum,
+      offset,
+      paranoid: false // 🔓 WAJIB: Biar Sequelize mau baca baris yang deleted_at != null
     });
 
-    return paginatedResponse(res, rows, count, page, limit, 'Trash listed successfully');
+    return paginatedResponse(
+      res, 
+      rows, 
+      count, 
+      pageNum, 
+      limitNum, 
+      'Trash listed successfully'
+    );
   } catch (error) {
-    next(error);
+    next(error); // Error otomatis ditangkap Global Error Handler (format JSON, bukan HTML!)
   }
 };
 

@@ -30,7 +30,17 @@ app.use(sessionConfig(sequelize));
 app.use('/api/v1', routes);
 
 app.use((req, res, next) => {
-  res.status(404).json({ success: false, message: 'Route not found' });
+  res.status(404).json({status : 'error', message: `Cannot ${req.method} ${req.originalUrl}` });
+});
+
+app.use((err, req, res, next) => {
+  const statusCode = err.statusCode || 500;
+  const message = err.message || 'Internal Server Error';
+
+  return res.status(statusCode).json({
+    status: 'error',
+    message: message
+  });
 });
 
 // app.use(errorHandler);

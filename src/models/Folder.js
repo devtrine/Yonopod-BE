@@ -50,7 +50,20 @@ module.exports = (sequelize, DataTypes) => {
     paranoid: true,
     createdAt: 'created_at',
     updatedAt: 'updated_at',
-    deletedAt: 'deleted_at'
+    deletedAt: 'deleted_at',
+
+    // Exclude vault_password secara global
+    defaultScope: {
+      attributes: { 
+        exclude: ['vault_password'] 
+      }
+    },
+    // Scope khusus untuk unlock
+    scopes: {
+      withPassword: {
+        attributes: {} 
+      }
+    }
   });
   
   return Folder;
