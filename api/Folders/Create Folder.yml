@@ -5,7 +5,14 @@ info:
 
 http:
   method: POST
-  url: ""
+  url: http://localhost:5000/api/v1/folders
+  body:
+    type: json
+    data: |-
+      {
+        "name":"Reels",
+        "parent_id":null
+      }
   auth: inherit
 
 settings:

@@ -5,7 +5,13 @@ info:
 
 http:
   method: POST
-  url: ""
+  url: http://localhost:5000/api/v1/recent
+  body:
+    type: json
+    data: |-
+      {
+        "file_id":3
+      }
   auth: inherit
 
 settings:
