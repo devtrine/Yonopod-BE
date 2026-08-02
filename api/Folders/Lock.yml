@@ -5,7 +5,7 @@ info:
 
 http:
   method: POST
-  url: http://localhost:5000/api/v1/folders/11/lock
+  url: "{{host}}/api/v1/folders/11/lock"
   body:
     type: json
     data: |-

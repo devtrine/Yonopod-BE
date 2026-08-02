@@ -5,7 +5,7 @@ info:
 
 http:
   method: GET
-  url: http://localhost:5000/api/v1/folders/10
+  url: "{{host}}/api/v1/folders/10"
   auth: inherit
 
 settings:
