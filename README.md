@@ -1,4 +1,4 @@
-### Setup Yono-BE
+# Setup Yono-BE
 
 ## Setup
 1. Prepare Postgres and make sure it is running.
