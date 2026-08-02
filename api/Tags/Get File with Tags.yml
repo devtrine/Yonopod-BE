@@ -5,7 +5,7 @@ info:
 
 http:
   method: GET
-  url: "{{host}}/api/v1/tags/7/files"
+  url: "{{host}}/api/v1/tags/8/files"
   auth: inherit
 
 settings:
