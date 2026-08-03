@@ -1,0 +1,20 @@
+info:
+  name: Restore
+  type: http
+  seq: 8
+
+http:
+  method: POST
+  url: http://localhost:6767/api/v1/files/{{id}}/restore
+  auth: inherit
+
+runtime:
+  variables:
+    - name: id
+      value: "1"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -23,12 +23,8 @@ exports.getPresignedUploadUrl = async (key, contentType, expiresIn = DEFAULT_EXP
   return await getSignedUrl(s3Client, command, { expiresIn });
 };
 
-exports.getPresignedDownloadUrl = async (key, expiresIn = DEFAULT_EXPIRY) => {
-  const command = new GetObjectCommand({
-    Bucket: DEFAULT_BUCKET,
-    Key: key,
-  });
-  return await getSignedUrl(s3Client, command, { expiresIn });
+exports.generatePresignedDownloadUrl = async (key, expiresIn = DEFAULT_EXPIRY) => {
+  return "http://linux-rijal"
 };
 
 exports.generatePresignedUploadUrl = async (key) => {
