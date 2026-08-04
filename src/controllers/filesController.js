@@ -180,7 +180,8 @@ const permanentDelete = async (req, res, next) => {
   try {
     const { id } = req.params;
     const file = await File.findOne({
-      where: { id, user_id: req.user.id }
+      where: { id, user_id: req.user.id },
+      paranoid: false
     });
 
     if (!file) throw new NotFoundError('File not found');
@@ -192,7 +193,10 @@ const permanentDelete = async (req, res, next) => {
     if (req.user.storage_used < 0n) req.user.storage_used = 0n;
     await req.user.save();
 
-    await file.destroy();
+    await file.destroy({
+      paranoid: false,
+      force: true
+    });
 
     return successResponse(res, null, 'File permanently deleted successfully');
   } catch (error) {

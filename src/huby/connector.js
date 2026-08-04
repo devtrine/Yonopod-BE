@@ -1,18 +1,6 @@
 const { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, HeadObjectCommand, CopyObjectCommand } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
-
-const s3Client = new S3Client({
-  endpoint: process.env.S3_ENDPOINT,
-  region: process.env.S3_REGION,
-  credentials: {
-    accessKeyId: process.env.S3_ACCESS_KEY,
-    secretAccessKey: process.env.S3_SECRET_KEY,
-  },
-  forcePathStyle: true,
-});
-
-const DEFAULT_BUCKET = process.env.S3_BUCKET;
-const DEFAULT_EXPIRY = parseInt(process.env.S3_PRESIGNED_EXPIRY) || 3600;
+const huby = require("./signer")
 
 exports.getPresignedUploadUrl = async (key, contentType, expiresIn = DEFAULT_EXPIRY) => {
   const command = new PutObjectCommand({
@@ -28,7 +16,7 @@ exports.generatePresignedDownloadUrl = async (key, expiresIn = DEFAULT_EXPIRY) =
 };
 
 exports.generatePresignedUploadUrl = async (key) => {
-  return "http://linux-rijal"
+  return huby.put(key)
 }
 
 exports.deleteFile = async (key) => {
