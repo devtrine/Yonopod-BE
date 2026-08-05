@@ -17,7 +17,7 @@ config:
 request:
   variables:
     - name: host
-      value: http://localhost:6767
+      value: http://localhost:5000
 bundled: false
 extensions:
   bruno:

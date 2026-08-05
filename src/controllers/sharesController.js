@@ -1,6 +1,6 @@
 const { Share, ShareAccessLog, File, Folder } = require('../models');
-const { successResponse, paginatedResponse, errorResponse } = require('../utils/response');
-const { NotFoundError, ValidationError, ForbiddenError } = require('../utils/errors');
+const { successResponse, paginatedResponse } = require('../utils/response');
+const { NotFoundError, ValidationError, ForbiddenError, BadRequestError } = require('../utils/errors');
 const { v4: uuidv4 } = require('uuid');
 const bcrypt = require('bcrypt');
 const huby = require('../huby/connector');
@@ -8,12 +8,14 @@ const huby = require('../huby/connector');
 const listShares = async (req, res, next) => {
   try {
     const { page = 1, limit = 20 } = req.query;
-    const offset = (page - 1) * limit;
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.max(1, parseInt(limit, 10) || 20);
+    const offset = (pageNum - 1) * limitNum;
 
     const { count, rows } = await Share.findAndCountAll({
       where: { user_id: req.user.id },
-      limit: parseInt(limit),
-      offset: parseInt(offset),
+      limit: limitNum,
+      offset,
       include: [
         { model: File, as: 'file' },
         { model: Folder, as: 'folder' }
@@ -21,7 +23,7 @@ const listShares = async (req, res, next) => {
       order: [['created_at', 'DESC']]
     });
 
-    return res.json(paginatedResponse(rows, parseInt(page), parseInt(limit), count));
+    return paginatedResponse(res, rows, count, pageNum, limitNum, 'Shares retrieved successfully');
   } catch (error) {
     next(error);
   }
@@ -29,17 +31,35 @@ const listShares = async (req, res, next) => {
 
 const createShare = async (req, res, next) => {
   try {
-    const { file_id, folder_id, share_type, password, permission, download_limit, expires_at } = req.body;
+    const { file_id, folder_id, share_type, password, permission, download_limit, expires_at, vault_password } = req.body;
+
+    if (!file_id && !folder_id) {
+      throw new BadRequestError('Either file_id or folder_id must be provided');
+    }
 
     if (file_id) {
       const file = await File.findOne({ where: { id: file_id, user_id: req.user.id } });
       if (!file) throw new NotFoundError('File not found');
     }
 
-    if (folder_id) {
-      const folder = await Folder.findOne({ where: { id: folder_id, user_id: req.user.id } });
-      if (!folder) throw new NotFoundError('Folder not found');
+  if (folder_id) {
+    const folder = await Folder.scope('withPassword').findOne({ 
+      where: { id: folder_id, user_id: req.user.id } 
+    });
+    if (!folder) throw new NotFoundError('Folder not found');
+
+    // 🔒 CEK VAULT: Jika folder berstatus locked/terkunci
+    if (folder.is_locked) {
+      if (!vault_password) {
+        throw new ForbiddenError('Vault password is required to share a locked folder');
+      }
+      // Verifikasi apakah password vault yang dimasukkan cocok
+      const isMatch = await bcrypt.compare(vault_password, folder.vault_password || '');
+      if (!isMatch) {
+        throw new ForbiddenError('Incorrect vault password');
+      }
     }
+  }
 
     let passwordHash = null;
     if (password) {
@@ -48,18 +68,21 @@ const createShare = async (req, res, next) => {
 
     const share = await Share.create({
       user_id: req.user.id,
-      file_id,
-      folder_id,
+      file_id: file_id || null,
+      folder_id: folder_id || null,
       share_token: uuidv4(),
       share_type: share_type || 'link',
       password: passwordHash,
       permission: permission || 'read_only',
-      download_limit,
-      expires_at,
+      download_limit: download_limit || null,
+      expires_at: expires_at || null,
       created_at: new Date()
     });
 
-    return res.status(201).json(successResponse(share, 'Share created successfully'));
+    const shareData = share.toJSON();
+    delete shareData.password;
+
+    return successResponse(res, shareData, 'Share created successfully', 201);
   } catch (error) {
     next(error);
   }
@@ -77,11 +100,9 @@ const getShare = async (req, res, next) => {
       ]
     });
 
-    if (!share) {
-      throw new NotFoundError('Share not found');
-    }
+    if (!share) throw new NotFoundError('Share not found');
 
-    return res.json(successResponse(share));
+    return successResponse(res, share, 'Share retrieved successfully');
   } catch (error) {
     next(error);
   }
@@ -92,13 +113,11 @@ const updateShare = async (req, res, next) => {
     const { id } = req.params;
     const { password, permission, download_limit, expires_at } = req.body;
 
-    const share = await Share.findOne({
+    const share = await Share.scope('withPassword').findOne({
       where: { id, user_id: req.user.id }
     });
 
-    if (!share) {
-      throw new NotFoundError('Share not found');
-    }
+    if (!share) throw new NotFoundError('Share not found');
 
     if (password !== undefined) {
       if (password === null || password === '') {
@@ -114,7 +133,10 @@ const updateShare = async (req, res, next) => {
 
     await share.save();
 
-    return res.json(successResponse(share, 'Share updated successfully'));
+    const shareData = share.toJSON();
+    delete shareData.password;
+
+    return successResponse(res, shareData, 'Share updated successfully');
   } catch (error) {
     next(error);
   }
@@ -128,13 +150,11 @@ const deleteShare = async (req, res, next) => {
       where: { id, user_id: req.user.id }
     });
 
-    if (!share) {
-      throw new NotFoundError('Share not found');
-    }
+    if (!share) throw new NotFoundError('Share not found');
 
     await share.destroy();
 
-    return res.json(successResponse(null, 'Share deleted successfully'));
+    return successResponse(res, null, 'Share deleted successfully');
   } catch (error) {
     next(error);
   }
@@ -164,22 +184,24 @@ const accessPublicShare = async (req, res, next) => {
       throw new ForbiddenError('This share link has reached its download limit');
     }
 
+    // 🔍 CETAK LOG DI TERMINAL UNTUK CEK
+    console.log('--- PUBLIC SHARE DATA ---', share.toJSON());
+
     await ShareAccessLog.create({
       share_id: share.id,
-      ip_address: req.ip,
+      ip_address: req.ip || req.connection.remoteAddress,
       action: 'view',
       accessed_at: new Date()
     });
 
     if (share.password) {
-      return res.json(successResponse({ requiresPassword: true }));
+      return successResponse(res, { requiresPassword: true }, 'Password required');
     }
 
-    // Exclude password from response
     const shareData = share.toJSON();
     delete shareData.password;
 
-    return res.json(successResponse(shareData));
+    return successResponse(res, shareData, 'Public share accessed successfully');
   } catch (error) {
     next(error);
   }
@@ -190,7 +212,7 @@ const verifySharePassword = async (req, res, next) => {
     const { token } = req.params;
     const { password } = req.body;
 
-    const share = await Share.findOne({
+    const share = await Share.scope('withPassword').findOne({
       where: { share_token: token },
       include: [
         { model: File, as: 'file' },
@@ -198,26 +220,23 @@ const verifySharePassword = async (req, res, next) => {
       ]
     });
 
-    if (!share) {
-      throw new NotFoundError('Share not found');
-    }
+    if (!share) throw new NotFoundError('Share not found');
 
-    if (!share.password) {
-      const shareData = share.toJSON();
-      delete shareData.password;
-      return res.json(successResponse(shareData));
-    }
+    if (share.password) {
+      if (!password) {
+        throw new BadRequestError('Password is required');
+      }
 
-    const isValid = await bcrypt.compare(password, share.password);
-
-    if (!isValid) {
-      throw new ForbiddenError('Incorrect password');
+      const isValid = await bcrypt.compare(password, share.password);
+      if (!isValid) {
+        throw new ForbiddenError('Incorrect password');
+      }
     }
 
     const shareData = share.toJSON();
     delete shareData.password;
 
-    return res.json(successResponse(shareData));
+    return successResponse(res, shareData, 'Share password verified successfully');
   } catch (error) {
     next(error);
   }
@@ -226,15 +245,14 @@ const verifySharePassword = async (req, res, next) => {
 const downloadSharedFile = async (req, res, next) => {
   try {
     const { token } = req.params;
+    const { password } = req.body; // Menerima password jika link diproteksi
 
-    const share = await Share.findOne({
+    const share = await Share.scope('withPassword').findOne({
       where: { share_token: token },
       include: [{ model: File, as: 'file' }]
     });
 
-    if (!share) {
-      throw new NotFoundError('Share not found');
-    }
+    if (!share) throw new NotFoundError('Share not found');
 
     if (!share.file) {
       throw new ValidationError('This share is not a file share');
@@ -248,9 +266,22 @@ const downloadSharedFile = async (req, res, next) => {
       throw new ForbiddenError('This share link has reached its download limit');
     }
 
+    // 🔒 CEK PASSWORD SHARE: Wajib verifikasi jika share link punya password
+    if (share.password) {
+      if (!password) {
+        throw new ForbiddenError('Password is required to download this file');
+      }
+      const isValid = await bcrypt.compare(password, share.password);
+      if (!isValid) {
+        throw new ForbiddenError('Incorrect share password');
+      }
+    }
+
+    // Update jumlah download
     share.download_count += 1;
     await share.save();
 
+    // Catat log pengunduhan
     await ShareAccessLog.create({
       share_id: share.id,
       ip_address: req.ip,
@@ -258,9 +289,10 @@ const downloadSharedFile = async (req, res, next) => {
       accessed_at: new Date()
     });
 
-    const downloadUrl = await huby.getPresignedDownloadUrl(share.file.file_path);
+    // Sesuaikan method dengan connector huby kamu (generatePresignedDownloadUrl)
+    const downloadUrl = await huby.generatePresignedDownloadUrl(share.file.file_path);
 
-    return res.json(successResponse({ downloadUrl }));
+    return successResponse(res, { downloadUrl }, 'Download URL generated successfully');
   } catch (error) {
     next(error);
   }

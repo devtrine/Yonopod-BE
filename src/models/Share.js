@@ -1,15 +1,14 @@
 const { Model } = require('sequelize');
 
 module.exports = (sequelize, DataTypes) => {
-  class Share extends Model {
+class Share extends Model {
     static associate(models) {
-      Share.belongsTo(models.User, { foreignKey: 'user_id' });
-      Share.belongsTo(models.File, { foreignKey: 'file_id' });
-      Share.belongsTo(models.Folder, { foreignKey: 'folder_id' });
-      Share.hasMany(models.ShareAccessLog, { foreignKey: 'share_id' });
+      Share.belongsTo(models.User, { foreignKey: 'user_id', as: 'user' });
+      Share.belongsTo(models.File, { foreignKey: 'file_id', as: 'file' });       
+      Share.belongsTo(models.Folder, { foreignKey: 'folder_id', as: 'folder' }); 
+      Share.hasMany(models.ShareAccessLog, { foreignKey: 'share_id', as: 'access_logs' });
     }
   }
-  
   Share.init({
     id: {
       type: DataTypes.INTEGER,
@@ -63,8 +62,18 @@ module.exports = (sequelize, DataTypes) => {
     underscored: true,
     timestamps: true,
     createdAt: 'created_at',
-    updatedAt: false
-  });
+    updatedAt: false,
+    
+    // 🔒 Terapkan defaultScope untuk menyembunyikan password hash dari response biasa
+    defaultScope: {
+      attributes: { exclude: ['password'] }
+    },
+    scopes: {
+      withPassword: {
+        attributes: {} // Scope khusus saat butuh bcrypt.compare
+      }
+    }
+});
   
   return Share;
 };
