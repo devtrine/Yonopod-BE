@@ -79,6 +79,7 @@ const presignUpload = async (req, res, next) => {
   }
 };
 
+// Jadiin Webhook.
 const confirmUpload = async (req, res, next) => {
   try {
     const { file_key, name, extension, folder_id, checksum, size } = req.body;
