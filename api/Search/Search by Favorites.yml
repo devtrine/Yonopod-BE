@@ -1,0 +1,19 @@
+info:
+  name: Search by Favorites
+  type: http
+  seq: 4
+
+http:
+  method: GET
+  url: "{{host}}/api/v1/search?favorite=true"
+  params:
+    - name: favorite
+      value: "true"
+      type: query
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

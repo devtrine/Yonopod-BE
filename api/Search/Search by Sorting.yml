@@ -1,0 +1,30 @@
+info:
+  name: "Search by Sorting "
+  type: http
+  seq: 7
+
+http:
+  method: GET
+  url: "{{host}}/api/v1/search?sortBy=size&sortOrder=desc"
+  params:
+    - name: sortBy
+      value: size
+      type: query
+    - name: sortOrder
+      value: desc
+      type: query
+    - name: page
+      value: "1"
+      type: query
+      disabled: true
+    - name: limit
+      value: "5"
+      type: query
+      disabled: true
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

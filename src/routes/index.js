@@ -8,6 +8,7 @@ const tagsRoutes = require('./tags');
 const sharesRoutes = require('./shares');
 const favoritesRoutes = require('./favorites');
 const recentRoutes = require('./recent');
+const searchRoutes = require('./search');
 
 router.use('/auth', authRoutes);
 router.use('/files', filesRoutes);
@@ -16,6 +17,7 @@ router.use('/tags', tagsRoutes);
 router.use('/shares', sharesRoutes);
 router.use('/favorites', favoritesRoutes);
 router.use('/recent', recentRoutes);
+router.use('/search', searchRoutes);
 
 router.get('/', (req, res) => {
   res.json({

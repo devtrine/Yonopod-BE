@@ -1,0 +1,19 @@
+info:
+  name: Search by Extension
+  type: http
+  seq: 2
+
+http:
+  method: GET
+  url: "{{host}}/api/v1/search?type=jpg"
+  params:
+    - name: type
+      value: jpg
+      type: query
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
