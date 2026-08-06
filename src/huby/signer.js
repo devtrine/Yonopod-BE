@@ -63,14 +63,28 @@ class HubySigner {
       this.generatePayloadPersist(key, config)
     );
   }
+
+  checkStatus(key, expire = this.defaultExpiry) {
+    return this.sign(
+      "check-status",
+      this.generatePayloadExpirable(key, expire, {})
+    )
+  }
+
+  setPersistAccess(key, persist_access) {
+    return this.sign(
+      "set-persist-access",
+      this.generatePayloadExpirable(key, 60, { persist_access })
+    )
+  }
+
+  
 }
 
 module.exports = new HubySigner();
 
 let huby = new HubySigner()
-let url = huby.put("linux:rijal")
+let url = huby.checkStatus("linux:me")
 
 
 console.log(url)
-
-
