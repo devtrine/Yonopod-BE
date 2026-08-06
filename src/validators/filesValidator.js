@@ -11,7 +11,8 @@ const confirmUploadSchema = Joi.object({
   name: Joi.string().optional(),
   extension: Joi.string().optional().allow(''),
   folder_id: Joi.number().integer().optional().allow(null),
-  checksum: Joi.string().optional().allow(null, '')
+  checksum: Joi.string().optional().allow(null, ''),
+  size: Joi.number().integer().optional().default(0)
 });
 
 const updateFileSchema = Joi.object({

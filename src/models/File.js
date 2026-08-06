@@ -41,6 +41,10 @@ module.exports = (sequelize, DataTypes) => {
     checksum: {
       type: DataTypes.STRING(255)
     },
+    size: {
+      type: DataTypes.BIGINT,
+      defaultValue: 0
+    },
     thumbnail_path: {
       type: DataTypes.STRING(500)
     },
