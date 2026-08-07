@@ -77,7 +77,7 @@ const presignUpload = async (req, res, next) => {
       throw new ForbiddenError('Storage quota exceeded');
     }
 
-    const uploadUrl = await huby.generatePresignedUploadUrl(fileKey);
+    const uploadUrl = await huby.put(fileKey);
 
     const file = await File.create({
       user_id: req.user.id,
@@ -131,7 +131,7 @@ const downloadFile = async (req, res, next) => {
 
     if (!file) throw new NotFoundError('File not found');
 
-    const downloadUrl = await huby.generatePresignedDownloadUrl(file.file_path);
+    const downloadUrl = await huby.resolve(file.file_path);
 
     return successResponse(res, { downloadUrl }, 'Download URL generated successfully');
   } catch (error) {
@@ -208,7 +208,7 @@ const permanentDelete = async (req, res, next) => {
     if (!file) throw new NotFoundError('File not found');
 
     if (huby.deleteFile) {
-      await huby.deleteFile(file.file_path);
+      // BELOM ADA
     }
 
     const used = BigInt(req.user.storage_used || 0);
