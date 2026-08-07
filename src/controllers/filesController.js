@@ -2,6 +2,8 @@ const { File, Folder, Tag, User } = require('../models');
 const { successResponse, paginatedResponse, errorResponse } = require('../utils/response');
 const { NotFoundError, UnauthorizedError, ForbiddenError } = require('../utils/errors');
 const huby = require('../huby/connector');
+const { NotFoundError, UnauthorizedError, ForbiddenError } = require('../utils/errors');
+const huby = require('../huby/signer');
 const { v4: uuidv4 } = require('uuid');
 const { Op } = require('sequelize');
 
@@ -22,10 +24,10 @@ const listFiles = async (req, res, next) => {
     const { count, rows } = await File.findAndCountAll({
       where: whereClause,
       include: [
-        { model: Folder, as: "folder" },
         { model: Tag, as: "tags", through: { attributes: [] } }
       ],
       order: [[sort_by, order]],
+      attributes: ["extension", "name", "id", "folder_id", "created_at", "deleted_at", "is_favorite"],
       limit,
       offset
     });
@@ -48,6 +50,13 @@ const getFile = async (req, res, next) => {
     });
 
     if (!file) throw new NotFoundError('File not found');
+
+    let url = {
+      check_status: huby.checkStatus(file.file_path),
+      download: huby.resolve(file.file_path)
+    }
+
+    file.dataValues.url = url
 
     return successResponse(res, file, 'File retrieved successfully');
   } catch (error) {
@@ -192,7 +201,8 @@ const permanentDelete = async (req, res, next) => {
   try {
     const { id } = req.params;
     const file = await File.findOne({
-      where: { id, user_id: req.user.id }
+      where: { id, user_id: req.user.id },
+      paranoid: false
     });
 
     if (!file) throw new NotFoundError('File not found');
@@ -206,7 +216,10 @@ const permanentDelete = async (req, res, next) => {
     req.user.storage_used = used - fileSize < 0n ? 0n : used - fileSize;
     await req.user.save();
 
-    await file.destroy({ force: true });
+    await file.destroy({
+      paranoid: false,
+      force: true
+    });
 
     return successResponse(res, null, 'File permanently deleted successfully');
   } catch (error) {
