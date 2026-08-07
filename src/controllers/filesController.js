@@ -1,6 +1,6 @@
 const { File, Folder, Tag, User } = require('../models');
 const { successResponse, paginatedResponse, errorResponse } = require('../utils/response');
-const { NotFoundError, UnauthorizedError } = require('../utils/errors');
+const { NotFoundError, UnauthorizedError, ForbiddenError } = require('../utils/errors');
 const huby = require('../huby/connector');
 const { v4: uuidv4 } = require('uuid');
 const { Op } = require('sequelize');
@@ -57,10 +57,16 @@ const getFile = async (req, res, next) => {
 
 const presignUpload = async (req, res, next) => {
   try {
-    const { name, extension, folder_id = null } = req.body;
+    const { name, extension, folder_id = null, size } = req.body;
     const uuid = uuidv4();
     const folderPath = folder_id ? folder_id : 'root';
     const fileKey = `${req.user.id}/${folderPath}/${uuid}-${name}`;
+
+    const used = BigInt(req.user.storage_used || 0);
+    const quota = BigInt(req.user.storage_quota || 0);
+    if (used + BigInt(size) > quota) {
+      throw new ForbiddenError('Storage quota exceeded');
+    }
 
     const uploadUrl = await huby.generatePresignedUploadUrl(fileKey);
 
@@ -70,8 +76,12 @@ const presignUpload = async (req, res, next) => {
       created_at: new Date(),
       folder_id,
       name,
-      extension
+      extension,
+      size
     })
+
+    req.user.storage_used = used + BigInt(size);
+    await req.user.save();
 
     return successResponse(res, { uploadUrl, file }, 'Presigned URL generated successfully');
   } catch (error) {
@@ -190,11 +200,13 @@ const permanentDelete = async (req, res, next) => {
     if (huby.deleteFile) {
       await huby.deleteFile(file.file_path);
     }
-    
-    if (req.user.storage_used < 0n) req.user.storage_used = 0n;
+
+    const used = BigInt(req.user.storage_used || 0);
+    const fileSize = BigInt(file.size || 0);
+    req.user.storage_used = used - fileSize < 0n ? 0n : used - fileSize;
     await req.user.save();
 
-    await file.destroy();
+    await file.destroy({ force: true });
 
     return successResponse(res, null, 'File permanently deleted successfully');
   } catch (error) {
