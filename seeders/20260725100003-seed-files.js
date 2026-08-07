@@ -21,7 +21,8 @@ module.exports = {
         name: 'readme.txt',
         file_path: `${admin.id}/1/${uuidv4()}-readme.txt`,
         extension: 'txt',
-        created_at: new Date()
+        created_at: new Date(),
+        size: 12
       },
       {
         id: 2,
@@ -30,7 +31,8 @@ module.exports = {
         name: 'photo.jpg',
         file_path: `${admin.id}/2/${uuidv4()}-photo.jpg`,
         extension: 'jpg',
-        created_at: new Date()
+        created_at: new Date(),
+        size: 30
       },
       {
         id: 3,
@@ -39,7 +41,8 @@ module.exports = {
         name: 'project-plan.pdf',
         file_path: `${admin.id}/3/${uuidv4()}-project-plan.pdf`,
         extension: 'pdf',
-        created_at: new Date()
+        created_at: new Date(),
+        size: 90
       },
       {
         id: 4,
@@ -48,7 +51,8 @@ module.exports = {
         name: 'notes.md',
         file_path: `${john.id}/4/${uuidv4()}-notes.md`,
         extension: 'md',
-        created_at: new Date()
+        created_at: new Date(),
+        size: 23
       }
     ]);
   },

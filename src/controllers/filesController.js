@@ -86,9 +86,10 @@ const presignUpload = async (req, res, next) => {
   }
 };
 
+// Jadiin Webhook.
 const confirmUpload = async (req, res, next) => {
   try {
-    const { file_key, name, extension, folder_id, checksum } = req.body;
+    const { file_key, name, extension, folder_id, checksum, size } = req.body;
 
     const file = await File.create({
       user_id: req.user.id,
@@ -97,6 +98,7 @@ const confirmUpload = async (req, res, next) => {
       file_path: file_key,
       extension,
       checksum,
+      size,
       created_at: new Date()
     });
 
