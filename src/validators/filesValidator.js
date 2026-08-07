@@ -3,8 +3,8 @@ const Joi = require('joi');
 const presignUploadSchema = Joi.object({
   name: Joi.string().required(),
   extension: Joi.string().required(),
+  size: Joi.number().integer().required().min(0),
   folder_id: Joi.number().integer().optional().allow(null),
-  size: Joi.number().integer().min(0).required(),
 });
 
 const confirmUploadSchema = Joi.object({
