@@ -1,8 +1,6 @@
 const { File, Folder, Tag, User } = require('../models');
 const { successResponse, paginatedResponse, errorResponse } = require('../utils/response');
 const { NotFoundError, UnauthorizedError, ForbiddenError } = require('../utils/errors');
-const huby = require('../huby/connector');
-const { NotFoundError, UnauthorizedError, ForbiddenError } = require('../utils/errors');
 const huby = require('../huby/signer');
 const { v4: uuidv4 } = require('uuid');
 const { Op } = require('sequelize');
