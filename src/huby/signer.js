@@ -43,10 +43,10 @@ class HubySigner {
     return this.generateEndpoint(action, payload);
   }
 
-  put(key, expire = this.defaultExpiry, config = {}) {
+  put(key, replace = false, expire = this.defaultExpiry) {
     return this.sign(
       "put",
-      this.generatePayloadExpirable(key, expire, config)
+      this.generatePayloadExpirable(key, expire, { replace })
     );
   }
 
