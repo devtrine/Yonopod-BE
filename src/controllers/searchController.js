@@ -15,7 +15,7 @@ const search = async (req, res, next) => {
         const folderWhere = { user_id: req.user.id };
 
         if (q) {
-            fileWhere.name = { [Op.like]: `%${q}%` };
+            fileWhere.name = { [Op.iLike]: `%${q.toLowerCase()}%` };
             folderWhere.name = { [Op.like]: `%${q}%` };
         }
 
@@ -24,7 +24,7 @@ const search = async (req, res, next) => {
         }
 
         if (folderId) {
-            fileWhere.folder_id = folderId;
+            // fileWhere.folder_id = folderId;
             folderWhere.parent_id = folderId;
         }
 
