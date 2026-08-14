@@ -64,7 +64,7 @@ const getFile = async (req, res, next) => {
 
 const presignUpload = async (req, res, next) => {
   try {
-    const { name, extension, folder_id = null, size } = req.body;
+    const { name, extension, folder_id = null, size = 0 } = req.body;
     const uuid = uuidv4();
     const folderPath = folder_id ? folder_id : 'root';
     const fileKey = `${req.user.id}/${folderPath}/${uuid}-${name}`;

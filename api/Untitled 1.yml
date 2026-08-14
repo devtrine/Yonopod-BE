@@ -1,0 +1,39 @@
+info:
+  name: Untitled 1
+  type: http
+  seq: 8
+
+http:
+  method: PUT
+  url: http://huby.cluster.devtrine:6969/.huby/storage/dapdap/put?key=1%2Froot%2Fd4c40793-a0c5-4600-a5e8-96807ce12dd1-rijal.md&ip=&exp=1786087480&config=%7B%22replace%22%3Afalse%7D&hash=ec7d2e0321175feefa8d9edfb
+  params:
+    - name: key
+      value: 1%2Froot%2Fd4c40793-a0c5-4600-a5e8-96807ce12dd1-rijal.md
+      type: query
+    - name: ip
+      value: ""
+      type: query
+    - name: exp
+      value: "1786087480"
+      type: query
+    - name: config
+      value: "%7B%22replace%22%3Afalse%7D"
+      type: query
+    - name: hash
+      value: ec7d2e0321175feefa8d9edfb
+      type: query
+  body:
+    type: multipart-form
+    data:
+      - name: file
+        type: file
+        value:
+          - C:\Users\LAB_RPL\Downloads\cheval-110340690.jpg
+        contentType: image/jpeg
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
