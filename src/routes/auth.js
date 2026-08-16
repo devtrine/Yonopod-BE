@@ -13,6 +13,7 @@ router.post('/register', validate(registerSchema), authController.register);
 router.post('/login', validate(loginSchema), authController.login);
 router.post('/logout', requireAuth, authController.logout);
 router.get('/me', requireAuth, authController.getMe);
+router.get('/stats', requireAuth, authController.stats)
 router.put('/me', requireAuth, validate(updateProfileSchema), authController.updateMe);
 router.put('/me/password', requireAuth, validate(changePasswordSchema), authController.changePassword);
 
