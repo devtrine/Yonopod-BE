@@ -10,14 +10,6 @@ const updateFolderSchema = Joi.object({
   parent_id: Joi.number().integer().allow(null).optional()
 });
 
-const lockFolderSchema = Joi.object({
-  vault_password: Joi.string().min(4).required()
-});
-
-const unlockFolderSchema = Joi.object({
-  vault_password: Joi.string().required()
-});
-
 const listFoldersQuery = Joi.object({
   parent_id: Joi.number().integer().optional().allow(null),
   page: Joi.number().integer().min(1).default(1),
@@ -27,7 +19,5 @@ const listFoldersQuery = Joi.object({
 module.exports = {
   createFolderSchema,
   updateFolderSchema,
-  lockFolderSchema,
-  unlockFolderSchema,
   listFoldersQuery
 };
