@@ -5,7 +5,16 @@ info:
 
 http:
   method: POST
-  url: http://localhost:5000/api/v1/
+  url: http://localhost:5000/api/v1/shares/public/28a8e10b-c809-4be6-ae7b-35573a10f8ca/verify
+  headers:
+    - name: Accept
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "password":"admin"
+      }
   auth: inherit
 
 settings:

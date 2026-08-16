@@ -5,11 +5,14 @@ info:
 
 http:
   method: PUT
-  url: http://localhost:6767/api/v1/shares/:id
-  params:
-    - name: id
-      value: ""
-      type: path
+  url: http://localhost:5000/api/v1/shares/5
+  body:
+    type: json
+    data: |-
+      {
+        "download_limit": 5,
+        "permission": "read_only"
+      }
   auth: inherit
 
 settings:

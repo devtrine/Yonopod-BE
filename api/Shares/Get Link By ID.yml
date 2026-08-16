@@ -5,11 +5,7 @@ info:
 
 http:
   method: GET
-  url: http://localhost:5000/api/v1/shares/:id
-  params:
-    - name: id
-      value: ""
-      type: path
+  url: http://localhost:5000/api/v1/shares/5
   auth: inherit
 
 settings:

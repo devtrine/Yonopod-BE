@@ -5,7 +5,7 @@ info:
 
 http:
   method: DELETE
-  url: http://localhost:5000/api/v1/shares
+  url: http://localhost:5000/api/v1/shares/5
   auth: inherit
 
 settings:
