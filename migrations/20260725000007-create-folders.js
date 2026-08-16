@@ -36,14 +36,6 @@ module.exports = {
       path: {
         type: Sequelize.STRING(500),
       },
-      is_locked: {
-        type: Sequelize.BOOLEAN,
-        allowNull: false,
-        defaultValue: false,
-      },
-      vault_password: {
-        type: Sequelize.STRING(255),
-      },
       created_at: {
         allowNull: false,
         type: Sequelize.DATE,

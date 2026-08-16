@@ -102,9 +102,6 @@ CREATE TABLE IF NOT EXISTS "folders" (
 	"parent_id" int,
 	"name" varchar(150) NOT NULL,
 	"path" varchar(500),
-	-- Folder Lock / Private Vault
-	"is_locked" boolean NOT NULL DEFAULT false,
-	"vault_password" varchar(255),
 	"created_at" timestamp NOT NULL,
 	"updated_at" timestamp,
 	"deleted_at" timestamp,
@@ -182,50 +179,6 @@ CREATE TABLE IF NOT EXISTS "recent_files" (
 );
 
 COMMENT ON TABLE recent_files IS 'Recent File';
-
-
-CREATE TABLE IF NOT EXISTS "shares" (
-	"id" serial NOT NULL UNIQUE,
-	"user_id" int NOT NULL,
-	"file_id" int,
-	"folder_id" int,
-	"share_token" varchar(255) NOT NULL UNIQUE,
-	-- link / form
-	"share_type" varchar(20) NOT NULL DEFAULT '''link''',
-	-- Password Protected Link
-	"password" varchar(255),
-	-- Read Only Permission
-	"permission" varchar(20) NOT NULL DEFAULT '''read_only''',
-	-- Download Limit
-	"download_limit" int,
-	"download_count" int NOT NULL DEFAULT 0,
-	-- Expired Link
-	"expires_at" timestamp,
-	"created_at" timestamp NOT NULL,
-	PRIMARY KEY("id")
-);
-
-COMMENT ON TABLE shares IS 'Sharing';
-COMMENT ON COLUMN shares.share_type IS 'link / form';
-COMMENT ON COLUMN shares.password IS 'Password Protected Link';
-COMMENT ON COLUMN shares.permission IS 'Read Only Permission';
-COMMENT ON COLUMN shares.download_limit IS 'Download Limit';
-COMMENT ON COLUMN shares.expires_at IS 'Expired Link';
-
-
-CREATE TABLE IF NOT EXISTS "share_access_log" (
-	"id" serial NOT NULL UNIQUE,
-	"share_id" int NOT NULL,
-	"ip_address" varchar(45),
-	-- view / download
-	"action" varchar(20) NOT NULL,
-	"accessed_at" timestamp NOT NULL,
-	PRIMARY KEY("id")
-);
-
-COMMENT ON TABLE share_access_log IS 'Log akses link share';
-COMMENT ON COLUMN share_access_log.action IS 'view / download';
-
 
 CREATE TABLE IF NOT EXISTS "audit_logs" (
 	"id" serial NOT NULL UNIQUE,
@@ -324,17 +277,6 @@ ALTER TABLE "files"
 ADD FOREIGN KEY("id") REFERENCES "recent_files"("file_id")
 ON UPDATE CASCADE ON DELETE CASCADE;
 ALTER TABLE "users"
-ADD FOREIGN KEY("id") REFERENCES "shares"("user_id")
-ON UPDATE CASCADE ON DELETE CASCADE;
-ALTER TABLE "files"
-ADD FOREIGN KEY("id") REFERENCES "shares"("file_id")
-ON UPDATE CASCADE ON DELETE CASCADE;
-ALTER TABLE "folders"
-ADD FOREIGN KEY("id") REFERENCES "shares"("folder_id")
-ON UPDATE CASCADE ON DELETE CASCADE;
-ALTER TABLE "shares"
-ADD FOREIGN KEY("id") REFERENCES "share_access_log"("share_id")
-ON UPDATE CASCADE ON DELETE CASCADE;
 ALTER TABLE "users"
 ADD FOREIGN KEY("id") REFERENCES "audit_logs"("user_id")
 ON UPDATE CASCADE ON DELETE SET NULL;
