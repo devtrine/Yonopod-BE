@@ -14,17 +14,17 @@ module.exports = (sequelize, DataTypes) => {
   
   File.init({
     id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
-      autoIncrement: true,
       allowNull: false
     },
     user_id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.UUID,
       allowNull: false
     },
     folder_id: {
-      type: DataTypes.INTEGER
+      type: DataTypes.UUID
     },
     name: {
       type: DataTypes.STRING(255),

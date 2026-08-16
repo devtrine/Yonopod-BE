@@ -9,13 +9,13 @@ module.exports = (sequelize, DataTypes) => {
   
   AuditLog.init({
     id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
-      autoIncrement: true,
       allowNull: false
     },
     user_id: {
-      type: DataTypes.INTEGER
+      type: DataTypes.UUID
     },
     action: {
       type: DataTypes.STRING(100),
@@ -25,7 +25,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING(50)
     },
     target_id: {
-      type: DataTypes.INTEGER
+      type: DataTypes.UUID
     },
     details: {
       type: DataTypes.STRING(500)

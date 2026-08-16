@@ -1,8 +1,8 @@
 const Joi = require('joi');
 
 const addFavoriteSchema = Joi.object({
-  file_id: Joi.number().integer().optional(),
-  folder_id: Joi.number().integer().optional()
+  file_id: Joi.string().uuid().optional(),
+  folder_id: Joi.string().uuid().optional()
 }).xor('file_id', 'folder_id');
 
 const listFavoritesQuery = Joi.object({

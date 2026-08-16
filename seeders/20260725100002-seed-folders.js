@@ -1,4 +1,5 @@
 'use strict';
+const { v4: uuidv4 } = require('uuid');
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
@@ -12,9 +13,11 @@ module.exports = {
 
     if (!admin || !john) return;
 
+    const docFolderId = uuidv4();
+
     await queryInterface.bulkInsert('folders', [
       {
-        id: 1,
+        id: docFolderId,
         user_id: admin.id,
         name: 'Documents',
         path: '/Documents',
@@ -22,7 +25,7 @@ module.exports = {
         created_at: new Date()
       },
       {
-        id: 2,
+        id: uuidv4(),
         user_id: admin.id,
         name: 'Photos',
         path: '/Photos',
@@ -30,7 +33,7 @@ module.exports = {
         created_at: new Date()
       },
       {
-        id: 3,
+        id: uuidv4(),
         user_id: admin.id,
         name: 'Projects',
         path: '/Projects',
@@ -38,7 +41,7 @@ module.exports = {
         created_at: new Date()
       },
       {
-        id: 4,
+        id: uuidv4(),
         user_id: john.id,
         name: 'My Files',
         path: '/My Files',
@@ -46,7 +49,7 @@ module.exports = {
         created_at: new Date()
       },
       {
-        id: 5,
+        id: uuidv4(),
         user_id: john.id,
         name: 'Vacation',
         path: '/Vacation',
@@ -57,11 +60,11 @@ module.exports = {
 
     await queryInterface.bulkInsert('folders', [
       {
-        id: 6,
+        id: uuidv4(),
         user_id: admin.id,
         name: 'Work',
         path: '/Documents/Work',
-        parent_id: 1,
+        parent_id: docFolderId,
         created_at: new Date()
       }
     ]);

@@ -1,5 +1,5 @@
 const { Model } = require('sequelize');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 module.exports = (sequelize, DataTypes) => {
   class User extends Model {
@@ -25,9 +25,9 @@ module.exports = (sequelize, DataTypes) => {
   
   User.init({
     id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
-      autoIncrement: true,
       allowNull: false
     },
     username: {

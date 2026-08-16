@@ -5,9 +5,9 @@ module.exports = {
     await queryInterface.createTable('system_stats', {
       id: {
         allowNull: false,
-        autoIncrement: true,
         primaryKey: true,
-        type: Sequelize.INTEGER,
+        type: Sequelize.UUID,
+        defaultValue: Sequelize.UUIDV4,
       },
       total_storage: {
         type: Sequelize.BIGINT,

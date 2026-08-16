@@ -1,4 +1,4 @@
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
 const { User, UserSession, LoginActivity, PasswordReset } = require('../models');
 const { File, Folder } = require('../models'); // For stats
