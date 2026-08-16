@@ -8,7 +8,6 @@ module.exports = (sequelize, DataTypes) => {
       Folder.hasMany(models.Folder, { as: 'Children', foreignKey: 'parent_id' });
       Folder.hasMany(models.File, { foreignKey: 'folder_id' });
       Folder.hasMany(models.Favorite, { foreignKey: 'folder_id' });
-      Folder.hasMany(models.Share, { foreignKey: 'folder_id' });
     }
   }
   
