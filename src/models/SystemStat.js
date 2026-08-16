@@ -9,9 +9,9 @@ module.exports = (sequelize, DataTypes) => {
   
   SystemStat.init({
     id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
-      autoIncrement: true,
       allowNull: false
     },
     total_storage: {

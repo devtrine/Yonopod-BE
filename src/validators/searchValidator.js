@@ -3,7 +3,7 @@ const Joi = require('joi');
 const searchSchema = Joi.object({
   q: Joi.string().optional().allow(''),
   type: Joi.string().optional().allow(''),
-  folderId: Joi.number().integer().optional().allow(null),
+  folderId: Joi.string().uuid().optional().allow(null),
   favorite: Joi.boolean().optional(),
   from: Joi.date().iso().optional(),
   to: Joi.date().iso().optional(),

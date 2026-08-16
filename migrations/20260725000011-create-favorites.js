@@ -5,12 +5,12 @@ module.exports = {
     await queryInterface.createTable('favorites', {
       id: {
         allowNull: false,
-        autoIncrement: true,
         primaryKey: true,
-        type: Sequelize.INTEGER,
+        type: Sequelize.UUID,
+        defaultValue: Sequelize.UUIDV4,
       },
       user_id: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.UUID,
         allowNull: false,
         references: {
           model: 'users',
@@ -20,7 +20,7 @@ module.exports = {
         onDelete: 'CASCADE',
       },
       file_id: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.UUID,
         allowNull: true,
         references: {
           model: 'files',
@@ -30,7 +30,7 @@ module.exports = {
         onDelete: 'CASCADE',
       },
       folder_id: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.UUID,
         allowNull: true,
         references: {
           model: 'folders',

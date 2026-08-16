@@ -5,12 +5,12 @@ module.exports = {
     await queryInterface.createTable('file_tags', {
       id: {
         allowNull: false,
-        autoIncrement: true,
         primaryKey: true,
-        type: Sequelize.INTEGER,
+        type: Sequelize.UUID,
+        defaultValue: Sequelize.UUIDV4,
       },
       file_id: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.UUID,
         allowNull: false,
         references: {
           model: 'files',
@@ -20,7 +20,7 @@ module.exports = {
         onDelete: 'CASCADE',
       },
       tag_id: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.UUID,
         allowNull: false,
         references: {
           model: 'tags',

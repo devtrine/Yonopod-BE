@@ -5,12 +5,12 @@ module.exports = {
     await queryInterface.createTable('audit_logs', {
       id: {
         allowNull: false,
-        autoIncrement: true,
         primaryKey: true,
-        type: Sequelize.INTEGER,
+        type: Sequelize.UUID,
+        defaultValue: Sequelize.UUIDV4,
       },
       user_id: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.UUID,
         allowNull: true,
         references: {
           model: 'users',
@@ -27,7 +27,7 @@ module.exports = {
         type: Sequelize.STRING(50),
       },
       target_id: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.UUID,
       },
       details: {
         type: Sequelize.STRING(500),

@@ -1,7 +1,7 @@
 const { Folder, File } = require('../models');
 const { successResponse, paginatedResponse } = require('../utils/response');
 const { NotFoundError, ForbiddenError, BadRequestError } = require('../utils/errors');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const { Op, Association } = require('sequelize');
 
 const listFolders = async (req, res, next) => {
@@ -13,7 +13,7 @@ const listFolders = async (req, res, next) => {
 
     const whereClause = {
       user_id: req.user.id,
-      parent_id: parent_id !== undefined ? (parent_id ? parseInt(parent_id, 10) : null) : null
+      parent_id: parent_id !== undefined ? (parent_id ? parent_id : null) : null
     };
 
     const { count, rows } = await Folder.findAndCountAll({
@@ -104,7 +104,7 @@ const updateFolder = async (req, res, next) => {
     if (!folder) throw new NotFoundError('Folder not found');
 
     // Mencegah folder menjadi parent dari dirinya sendiri
-    if (parent_id !== undefined && parseInt(parent_id, 10) === folder.id) {
+    if (parent_id !== undefined && parent_id === folder.id) {
       throw new BadRequestError('Folder cannot be set as its own parent');
     }
 

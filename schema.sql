@@ -1,6 +1,7 @@
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 CREATE TABLE IF NOT EXISTS "users" (
-	"id" serial NOT NULL UNIQUE,
+	"id" uuid NOT NULL DEFAULT gen_random_uuid() UNIQUE,
 	"username" varchar(100) NOT NULL UNIQUE,
 	"email" varchar(150) NOT NULL UNIQUE,
 	"password_hash" varchar(255) NOT NULL,
@@ -11,7 +12,7 @@ CREATE TABLE IF NOT EXISTS "users" (
 	-- Penyimpanan terpakai (byte)
 	"storage_used" bigint NOT NULL DEFAULT 0,
 	-- user / admin
-	"role" varchar(20) NOT NULL DEFAULT '''user''',
+	"role" varchar(20) NOT NULL DEFAULT 'user',
 	"is_active" boolean NOT NULL DEFAULT true,
 	"two_factor_enabled" boolean NOT NULL DEFAULT false,
 	"created_at" timestamp NOT NULL,
@@ -26,8 +27,8 @@ COMMENT ON COLUMN users.role IS 'user / admin';
 
 
 CREATE TABLE IF NOT EXISTS "password_resets" (
-	"id" serial NOT NULL UNIQUE,
-	"user_id" int NOT NULL,
+	"id" uuid NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+	"user_id" uuid NOT NULL,
 	"token" varchar(255) NOT NULL,
 	"expires_at" timestamp NOT NULL,
 	"created_at" timestamp NOT NULL,
@@ -38,8 +39,8 @@ COMMENT ON TABLE password_resets IS 'Token reset password';
 
 
 CREATE TABLE IF NOT EXISTS "user_sessions" (
-	"id" serial NOT NULL UNIQUE,
-	"user_id" int NOT NULL,
+	"id" uuid NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+	"user_id" uuid NOT NULL,
 	"session_token" varchar(255) NOT NULL UNIQUE,
 	"ip_address" varchar(45),
 	"user_agent" varchar(255),
@@ -53,13 +54,13 @@ COMMENT ON TABLE user_sessions IS 'Session Management';
 
 
 CREATE TABLE IF NOT EXISTS "login_activity" (
-	"id" serial NOT NULL UNIQUE,
-	"user_id" int NOT NULL,
+	"id" uuid NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+	"user_id" uuid NOT NULL,
 	"ip_address" varchar(45),
 	"device" varchar(150),
 	"location" varchar(150),
 	-- success / failed
-	"status" varchar(20) NOT NULL DEFAULT '''success''',
+	"status" varchar(20) NOT NULL DEFAULT 'success',
 	"created_at" timestamp NOT NULL,
 	PRIMARY KEY("id")
 );
@@ -69,8 +70,8 @@ COMMENT ON COLUMN login_activity.status IS 'success / failed';
 
 
 CREATE TABLE IF NOT EXISTS "devices" (
-	"id" serial NOT NULL UNIQUE,
-	"user_id" int NOT NULL,
+	"id" uuid NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+	"user_id" uuid NOT NULL,
 	"device_name" varchar(150),
 	"device_type" varchar(50),
 	"is_trusted" boolean NOT NULL DEFAULT false,
@@ -83,8 +84,8 @@ COMMENT ON TABLE devices IS 'Device Management';
 
 
 CREATE TABLE IF NOT EXISTS "account_activity_log" (
-	"id" serial NOT NULL UNIQUE,
-	"user_id" int NOT NULL,
+	"id" uuid NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+	"user_id" uuid NOT NULL,
 	"activity_type" varchar(100) NOT NULL,
 	"description" varchar(255),
 	"ip_address" varchar(45),
@@ -96,10 +97,10 @@ COMMENT ON TABLE account_activity_log IS 'Riwayat Aktivitas Akun';
 
 
 CREATE TABLE IF NOT EXISTS "folders" (
-	"id" serial NOT NULL UNIQUE,
-	"user_id" int NOT NULL,
+	"id" uuid NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+	"user_id" uuid NOT NULL,
 	-- Nested folder (self reference)
-	"parent_id" int,
+	"parent_id" uuid,
 	"name" varchar(150) NOT NULL,
 	"path" varchar(500),
 	"created_at" timestamp NOT NULL,
@@ -110,18 +111,18 @@ CREATE TABLE IF NOT EXISTS "folders" (
 
 COMMENT ON TABLE folders IS 'Folder Management';
 COMMENT ON COLUMN folders.parent_id IS 'Nested folder (self reference)';
-COMMENT ON COLUMN folders.is_locked IS 'Folder Lock / Private Vault';
 
 
 CREATE TABLE IF NOT EXISTS "files" (
-	"id" serial NOT NULL UNIQUE,
-	"user_id" int NOT NULL,
-	"folder_id" int,
+	"id" uuid NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+	"user_id" uuid NOT NULL,
+	"folder_id" uuid,
 	"name" varchar(255) NOT NULL,
 	"file_path" varchar(500) NOT NULL,
 	-- Statistik berdasarkan tipe file
 	"extension" varchar(20),
 	"checksum" varchar(255),
+	"size" bigint DEFAULT 0,
 	-- Preview Gambar & Video
 	"thumbnail_path" varchar(500),
 	"is_favorite" boolean NOT NULL DEFAULT false,
@@ -137,8 +138,8 @@ COMMENT ON COLUMN files.thumbnail_path IS 'Preview Gambar & Video';
 
 
 CREATE TABLE IF NOT EXISTS "tags" (
-	"id" serial NOT NULL UNIQUE,
-	"user_id" int NOT NULL,
+	"id" uuid NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+	"user_id" uuid NOT NULL,
 	"name" varchar(100) NOT NULL,
 	"color" varchar(20),
 	"created_at" timestamp NOT NULL,
@@ -149,9 +150,9 @@ COMMENT ON TABLE tags IS 'Tag & Label';
 
 
 CREATE TABLE IF NOT EXISTS "file_tags" (
-	"id" serial NOT NULL UNIQUE,
-	"file_id" int NOT NULL,
-	"tag_id" int NOT NULL,
+	"id" uuid NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+	"file_id" uuid NOT NULL,
+	"tag_id" uuid NOT NULL,
 	PRIMARY KEY("id")
 );
 
@@ -159,10 +160,10 @@ COMMENT ON TABLE file_tags IS 'Relasi File dan Tag (many-to-many)';
 
 
 CREATE TABLE IF NOT EXISTS "favorites" (
-	"id" serial NOT NULL UNIQUE,
-	"user_id" int NOT NULL,
-	"file_id" int,
-	"folder_id" int,
+	"id" uuid NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+	"user_id" uuid NOT NULL,
+	"file_id" uuid,
+	"folder_id" uuid,
 	"created_at" timestamp NOT NULL,
 	PRIMARY KEY("id")
 );
@@ -171,9 +172,9 @@ COMMENT ON TABLE favorites IS 'Favorite File';
 
 
 CREATE TABLE IF NOT EXISTS "recent_files" (
-	"id" serial NOT NULL UNIQUE,
-	"user_id" int NOT NULL,
-	"file_id" int NOT NULL,
+	"id" uuid NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+	"user_id" uuid NOT NULL,
+	"file_id" uuid NOT NULL,
 	"accessed_at" timestamp NOT NULL,
 	PRIMARY KEY("id")
 );
@@ -181,11 +182,11 @@ CREATE TABLE IF NOT EXISTS "recent_files" (
 COMMENT ON TABLE recent_files IS 'Recent File';
 
 CREATE TABLE IF NOT EXISTS "audit_logs" (
-	"id" serial NOT NULL UNIQUE,
-	"user_id" int,
+	"id" uuid NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+	"user_id" uuid,
 	"action" varchar(100) NOT NULL,
 	"target_type" varchar(50),
-	"target_id" int,
+	"target_id" uuid,
 	"details" varchar(500),
 	"ip_address" varchar(45),
 	"created_at" timestamp NOT NULL,
@@ -196,8 +197,8 @@ COMMENT ON TABLE audit_logs IS 'Audit Log';
 
 
 CREATE TABLE IF NOT EXISTS "two_factor_auth" (
-	"id" serial NOT NULL UNIQUE,
-	"user_id" int NOT NULL UNIQUE,
+	"id" uuid NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+	"user_id" uuid NOT NULL UNIQUE,
 	"secret" varchar(255),
 	"is_enabled" boolean NOT NULL DEFAULT false,
 	"backup_codes" varchar(500),
@@ -209,7 +210,7 @@ COMMENT ON TABLE two_factor_auth IS 'Two Factor Authentication (Target Pengemban
 
 
 CREATE TABLE IF NOT EXISTS "system_stats" (
-	"id" serial NOT NULL UNIQUE,
+	"id" uuid NOT NULL DEFAULT gen_random_uuid() UNIQUE,
 	-- Monitoring Penggunaan Storage
 	"total_storage" bigint NOT NULL,
 	"used_storage" bigint NOT NULL,
@@ -225,61 +226,78 @@ COMMENT ON COLUMN system_stats.total_storage IS 'Monitoring Penggunaan Storage';
 COMMENT ON COLUMN system_stats.total_users IS 'Statistik keseluruhan sistem';
 
 
-ALTER TABLE "users"
-ADD FOREIGN KEY("id") REFERENCES "password_resets"("user_id")
+ALTER TABLE "password_resets"
+ADD FOREIGN KEY("user_id") REFERENCES "users"("id")
 ON UPDATE CASCADE ON DELETE CASCADE;
-ALTER TABLE "users"
-ADD FOREIGN KEY("id") REFERENCES "user_sessions"("user_id")
+
+ALTER TABLE "user_sessions"
+ADD FOREIGN KEY("user_id") REFERENCES "users"("id")
 ON UPDATE CASCADE ON DELETE CASCADE;
-ALTER TABLE "users"
-ADD FOREIGN KEY("id") REFERENCES "login_activity"("user_id")
+
+ALTER TABLE "login_activity"
+ADD FOREIGN KEY("user_id") REFERENCES "users"("id")
 ON UPDATE CASCADE ON DELETE CASCADE;
-ALTER TABLE "users"
-ADD FOREIGN KEY("id") REFERENCES "devices"("user_id")
+
+ALTER TABLE "devices"
+ADD FOREIGN KEY("user_id") REFERENCES "users"("id")
 ON UPDATE CASCADE ON DELETE CASCADE;
-ALTER TABLE "users"
-ADD FOREIGN KEY("id") REFERENCES "account_activity_log"("user_id")
+
+ALTER TABLE "account_activity_log"
+ADD FOREIGN KEY("user_id") REFERENCES "users"("id")
 ON UPDATE CASCADE ON DELETE CASCADE;
-ALTER TABLE "users"
-ADD FOREIGN KEY("id") REFERENCES "folders"("user_id")
-ON UPDATE CASCADE ON DELETE CASCADE;
+
 ALTER TABLE "folders"
-ADD FOREIGN KEY("id") REFERENCES "folders"("parent_id")
+ADD FOREIGN KEY("user_id") REFERENCES "users"("id")
 ON UPDATE CASCADE ON DELETE CASCADE;
-ALTER TABLE "users"
-ADD FOREIGN KEY("id") REFERENCES "files"("user_id")
-ON UPDATE CASCADE ON DELETE CASCADE;
+
 ALTER TABLE "folders"
-ADD FOREIGN KEY("id") REFERENCES "files"("folder_id")
+ADD FOREIGN KEY("parent_id") REFERENCES "folders"("id")
 ON UPDATE CASCADE ON DELETE CASCADE;
-ALTER TABLE "users"
-ADD FOREIGN KEY("id") REFERENCES "tags"("user_id")
-ON UPDATE CASCADE ON DELETE CASCADE;
+
 ALTER TABLE "files"
-ADD FOREIGN KEY("id") REFERENCES "file_tags"("file_id")
+ADD FOREIGN KEY("user_id") REFERENCES "users"("id")
 ON UPDATE CASCADE ON DELETE CASCADE;
+
+ALTER TABLE "files"
+ADD FOREIGN KEY("folder_id") REFERENCES "folders"("id")
+ON UPDATE CASCADE ON DELETE CASCADE;
+
 ALTER TABLE "tags"
-ADD FOREIGN KEY("id") REFERENCES "file_tags"("tag_id")
+ADD FOREIGN KEY("user_id") REFERENCES "users"("id")
 ON UPDATE CASCADE ON DELETE CASCADE;
-ALTER TABLE "users"
-ADD FOREIGN KEY("id") REFERENCES "favorites"("user_id")
+
+ALTER TABLE "file_tags"
+ADD FOREIGN KEY("file_id") REFERENCES "files"("id")
 ON UPDATE CASCADE ON DELETE CASCADE;
-ALTER TABLE "files"
-ADD FOREIGN KEY("id") REFERENCES "favorites"("file_id")
+
+ALTER TABLE "file_tags"
+ADD FOREIGN KEY("tag_id") REFERENCES "tags"("id")
 ON UPDATE CASCADE ON DELETE CASCADE;
-ALTER TABLE "folders"
-ADD FOREIGN KEY("id") REFERENCES "favorites"("folder_id")
+
+ALTER TABLE "favorites"
+ADD FOREIGN KEY("user_id") REFERENCES "users"("id")
 ON UPDATE CASCADE ON DELETE CASCADE;
-ALTER TABLE "users"
-ADD FOREIGN KEY("id") REFERENCES "recent_files"("user_id")
+
+ALTER TABLE "favorites"
+ADD FOREIGN KEY("file_id") REFERENCES "files"("id")
 ON UPDATE CASCADE ON DELETE CASCADE;
-ALTER TABLE "files"
-ADD FOREIGN KEY("id") REFERENCES "recent_files"("file_id")
+
+ALTER TABLE "favorites"
+ADD FOREIGN KEY("folder_id") REFERENCES "folders"("id")
 ON UPDATE CASCADE ON DELETE CASCADE;
-ALTER TABLE "users"
-ALTER TABLE "users"
-ADD FOREIGN KEY("id") REFERENCES "audit_logs"("user_id")
+
+ALTER TABLE "recent_files"
+ADD FOREIGN KEY("user_id") REFERENCES "users"("id")
+ON UPDATE CASCADE ON DELETE CASCADE;
+
+ALTER TABLE "recent_files"
+ADD FOREIGN KEY("file_id") REFERENCES "files"("id")
+ON UPDATE CASCADE ON DELETE CASCADE;
+
+ALTER TABLE "audit_logs"
+ADD FOREIGN KEY("user_id") REFERENCES "users"("id")
 ON UPDATE CASCADE ON DELETE SET NULL;
-ALTER TABLE "users"
-ADD FOREIGN KEY("id") REFERENCES "two_factor_auth"("user_id")
+
+ALTER TABLE "two_factor_auth"
+ADD FOREIGN KEY("user_id") REFERENCES "users"("id")
 ON UPDATE CASCADE ON DELETE CASCADE;
