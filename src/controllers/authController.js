@@ -1,6 +1,7 @@
 const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
 const { User, UserSession, LoginActivity, PasswordReset } = require('../models');
+const { File, Folder } = require('../models'); // For stats
 const { successResponse, errorResponse } = require('../utils/response');
 const { ConflictError, UnauthorizedError, NotFoundError } = require('../utils/errors');
 const { Op } = require('sequelize');
@@ -85,6 +86,7 @@ const login = async (req, res, next) => {
 
     return successResponse(res, userData, 'Logged in successfully');
   } catch (error) {
+    console.log(error)
     next(error);
   }
 };
@@ -201,6 +203,34 @@ const resetPassword = async (req, res, next) => {
   }
 };
 
+
+const stats = async (req, res, next) => {
+  try {
+    let totalFile = File.count({
+      where: {
+        user_id: req.user.id
+      }
+    })
+
+    let totalFolder = Folder.count({
+      where: {
+        user_id: req.user.id
+      }
+    })
+
+    let response = {
+      files: await totalFile,
+      folders: await totalFolder
+    }
+
+    console.log(response)
+
+    return successResponse(res, response, "Success")
+  } catch(error) {
+    next(error)
+  }
+}
+
 module.exports = {
   register,
   login,
@@ -209,5 +239,6 @@ module.exports = {
   updateMe,
   changePassword,
   forgotPassword,
-  resetPassword
+  resetPassword,
+  stats
 };

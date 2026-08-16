@@ -18,6 +18,9 @@ request:
   variables:
     - name: host
       value: http://localhost:6767
+      disabled: true
+    - name: host
+      value: https://yonopod.lowres.my.id
 bundled: false
 extensions:
   bruno:

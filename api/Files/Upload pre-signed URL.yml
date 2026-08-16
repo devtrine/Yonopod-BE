@@ -1,7 +1,7 @@
 info:
   name: Upload pre-signed URL
   type: http
-  seq: 5
+  seq: 4
 
 http:
   method: POST

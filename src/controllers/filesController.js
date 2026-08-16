@@ -1,4 +1,4 @@
-const { File, Folder, Tag, User } = require('../models');
+const { File, Folder, Tag, User, RecentFile } = require('../models');
 const { successResponse, paginatedResponse, errorResponse } = require('../utils/response');
 const { NotFoundError, UnauthorizedError, ForbiddenError } = require('../utils/errors');
 const huby = require('../huby/signer');
@@ -154,6 +154,10 @@ const updateFile = async (req, res, next) => {
     file.updated_at = new Date();
 
     await file.save();
+    await RecentFile.create({
+      user_id: req.user.id,
+      file_id: file.id
+    })
 
     return successResponse(res, file, 'File updated successfully');
   } catch (error) {

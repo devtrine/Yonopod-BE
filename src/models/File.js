@@ -8,7 +8,6 @@ module.exports = (sequelize, DataTypes) => {
       File.hasMany(models.FileTag, { foreignKey: 'file_id' });
       File.hasMany(models.Favorite, { foreignKey: 'file_id' });
       File.hasMany(models.RecentFile, { foreignKey: 'file_id' });
-      File.hasMany(models.Share, { foreignKey: 'file_id' });
       File.belongsToMany(models.Tag, { through: models.FileTag, foreignKey: 'file_id', as: "tags" });
     }
   }

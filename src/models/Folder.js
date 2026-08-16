@@ -8,7 +8,6 @@ module.exports = (sequelize, DataTypes) => {
       Folder.hasMany(models.Folder, { as: 'Children', foreignKey: 'parent_id' });
       Folder.hasMany(models.File, { foreignKey: 'folder_id' });
       Folder.hasMany(models.Favorite, { foreignKey: 'folder_id' });
-      Folder.hasMany(models.Share, { foreignKey: 'folder_id' });
     }
   }
   
@@ -33,14 +32,6 @@ module.exports = (sequelize, DataTypes) => {
     path: {
       type: DataTypes.STRING(500)
     },
-    is_locked: {
-      type: DataTypes.BOOLEAN,
-      allowNull: false,
-      defaultValue: false
-    },
-    vault_password: {
-      type: DataTypes.STRING(255)
-    },
   }, {
     sequelize,
     modelName: 'Folder',
@@ -51,19 +42,6 @@ module.exports = (sequelize, DataTypes) => {
     createdAt: 'created_at',
     updatedAt: 'updated_at',
     deletedAt: 'deleted_at',
-
-    // Exclude vault_password secara global
-    defaultScope: {
-      attributes: { 
-        exclude: ['vault_password'] 
-      }
-    },
-    // Scope khusus untuk unlock
-    scopes: {
-      withPassword: {
-        attributes: {} 
-      }
-    }
   });
   
   return Folder;

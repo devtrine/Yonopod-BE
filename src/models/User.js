@@ -14,7 +14,6 @@ module.exports = (sequelize, DataTypes) => {
       User.hasMany(models.Tag, { foreignKey: 'user_id' });
       User.hasMany(models.Favorite, { foreignKey: 'user_id' });
       User.hasMany(models.RecentFile, { foreignKey: 'user_id' });
-      User.hasMany(models.Share, { foreignKey: 'user_id' });
       User.hasMany(models.AuditLog, { foreignKey: 'user_id' });
       User.hasOne(models.TwoFactorAuth, { foreignKey: 'user_id' });
     }

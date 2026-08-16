@@ -19,7 +19,5 @@ router.put('/:id', validate(updateFolderSchema), foldersController.updateFolder)
 router.delete('/:id', foldersController.softDelete);
 router.post('/:id/restore', foldersController.restore);
 router.delete('/:id/permanent', foldersController.permanentDelete);
-router.post('/:id/lock', validate(lockFolderSchema), foldersController.lockFolder);
-router.post('/:id/unlock', validate(unlockFolderSchema), foldersController.unlockFolder);
 
 module.exports = router;

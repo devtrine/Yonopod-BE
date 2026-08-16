@@ -212,65 +212,6 @@ const permanentDelete = async (req, res, next) => {
   }
 };
 
-const lockFolder = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const { vault_password } = req.body;
-
-    if (!vault_password) throw new BadRequestError('Vault password is required');
-    
-    const folder = await Folder.findOne({
-      where: { id, user_id: req.user.id }
-    });
-
-    if (!folder) throw new NotFoundError('Folder not found');
-
-    const hashed = await bcrypt.hash(vault_password, 12);
-    folder.vault_password = hashed;
-    folder.is_locked = true;
-    await folder.save();
-
-    return successResponse(res, null, 'Folder locked successfully');
-  } catch (error) {
-    next(error);
-  }
-};
-
-const unlockFolder = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const { vault_password } = req.body;
-
-    if (!vault_password) {
-      throw new BadRequestError('Vault password is required');
-    }
-    
-    // 1. Panggil scope('withPassword') khusus di sini untuk menarik hash password
-    const folder = await Folder.scope('withPassword').findOne({
-      where: { id, user_id: req.user.id },
-      include: [
-        { association: 'Children', required: false },
-        { association: 'Files', required: false }
-      ]
-    });
-
-    if (!folder) throw new NotFoundError('Folder not found');
-    if (!folder.is_locked) return successResponse(res, folder, 'Folder is not locked');
-
-    // 2. Verifikasi password
-    const isMatch = await bcrypt.compare(vault_password, folder.vault_password || '');
-    if (!isMatch) throw new ForbiddenError('Incorrect vault password');
-
-    // 3. Sanitasi objek sebelum dikirim ke FE (Double Security)
-    const folderJson = folder.toJSON();
-    delete folderJson.vault_password;
-
-    return successResponse(res, folderJson, 'Folder unlocked successfully');
-  } catch (error) {
-    next(error);
-  }
-};
-
 const listTrash = async (req, res, next) => {
   try {
     const { page = 1, limit = 20 } = req.query;
@@ -310,7 +251,5 @@ module.exports = {
   softDelete,
   restore,
   permanentDelete,
-  lockFolder,
-  unlockFolder,
   listTrash
 };
