@@ -1,4 +1,4 @@
-const { File, Folder, Tag, User, RecentFile } = require('../models');
+const { File, Folder, Tag, User, RecentFile, Favorite } = require('../models');
 const { successResponse, paginatedResponse, errorResponse } = require('../utils/response');
 const { NotFoundError, UnauthorizedError, ForbiddenError } = require('../utils/errors');
 const huby = require('../huby/signer');
@@ -67,7 +67,7 @@ const presignUpload = async (req, res, next) => {
     const { name, extension, folder_id = null, size } = req.body;
     const uuid = uuidv4();
     const folderPath = folder_id ? folder_id : 'root';
-    const fileKey = `${req.user.id}/${folderPath}/${uuid}-${name}`;
+    const fileKey = `uploads:${uuid}-${name}`;
 
     const used = BigInt(req.user.storage_used || 0);
     const quota = BigInt(req.user.storage_quota || 0);
@@ -169,11 +169,20 @@ const softDelete = async (req, res, next) => {
   try {
     const { id } = req.params;
     const file = await File.findOne({
-      where: { id, user_id: req.user.id, deleted_at: null }
+      where: { id, user_id: req.user.id, deleted_at: null },
+      attributes: ["id"]
     });
 
     if (!file) throw new NotFoundError('File not found');
-    await file.destroy();
+    
+    const favorite = await Favorite.findOne({
+      where: { file_id: file.id },
+      attributes: ["id"]
+    })
+
+    await file.update({is_favorite: false})
+    await favorite.destroy()
+    await file.destroy()
 
     return successResponse(res, file, 'File soft deleted successfully');
   } catch (error) {
