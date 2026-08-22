@@ -16,6 +16,7 @@ module.exports = (sequelize, DataTypes) => {
       User.hasMany(models.RecentFile, { foreignKey: 'user_id' });
       User.hasMany(models.AuditLog, { foreignKey: 'user_id' });
       User.hasOne(models.TwoFactorAuth, { foreignKey: 'user_id' });
+      User.hasMany(models.Notification, { foreignKey: 'user_id' });
     }
 
     async validPassword(password) {
