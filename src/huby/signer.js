@@ -43,10 +43,10 @@ class HubySigner {
     return this.generateEndpoint(action, payload);
   }
 
-  put(key, replace = false, expire = this.defaultExpiry) {
+  put(key, config = {}, expire = this.defaultExpiry) {
     return this.sign(
       "put",
-      this.generatePayloadExpirable(key, expire, { replace })
+      this.generatePayloadExpirable(key, expire, config)
     );
   }
 
@@ -78,13 +78,38 @@ class HubySigner {
     )
   }
 
+  rename(key, new_name, config = {}) {
+    config.new_name = new_name
+
+    return this.sign(
+      "rename",
+      this.generatePayloadExpirable(key, 60, config)
+    )
+  }
+
   
 }
 
 module.exports = new HubySigner();
 
 let huby = new HubySigner()
-let url = huby.checkStatus("linux:me")
+let url = huby.put(
+  "linux:dapdap",
+  {
+    "replace": true,
+    "webhook": {
+      "use": true,
+      "origin": "https://webhook.site",
+      "endpoint": "/5e30173d-edab-4e5d-a6d4-c2de9cf8d815"
+    }
+  }
+)
+let webhook = {
+  "use": true,
+  "origin": "https://webhook.site",
+  "endpoint": "/5e30173d-edab-4e5d-a6d4-c2de9cf8d815"
+}
 
+url = huby.rename("linux:dapdap", "mbappe.png", { webhook })
 
 console.log(url)
