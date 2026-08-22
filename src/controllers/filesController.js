@@ -169,19 +169,18 @@ const softDelete = async (req, res, next) => {
   try {
     const { id } = req.params;
     const file = await File.findOne({
-      where: { id, user_id: req.user.id, deleted_at: null },
-      attributes: ["id"]
+      where: { id, user_id: req.user.id, deleted_at: null }
     });
 
     if (!file) throw new NotFoundError('File not found');
     
     const favorite = await Favorite.findOne({
-      where: { file_id: file.id },
-      attributes: ["id"]
+      where: { file_id: file.id }
     })
+    
+    if (favorite) await favorite.destroy();
 
     await file.update({is_favorite: false})
-    await favorite.destroy()
     await file.destroy()
 
     return successResponse(res, file, 'File soft deleted successfully');
