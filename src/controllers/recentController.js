@@ -22,21 +22,13 @@ const listRecent = async (req, res, next) => {
         include: [{
           model: Folder,
           as: 'folder',
-          attributes: ['id', 'name', 'is_locked']
+          attributes: ['id', 'name']
         }]
       }],
       order: [['accessed_at', 'DESC']]
     });
 
-    // 🔒 Filter file yang berada di dalam Locked Folder (Vault) agar tidak bocor di Recent
-    const filteredRows = rows.filter(item => {
-      if (item.file && item.file.folder && item.file.folder.is_locked) {
-        return false;
-      }
-      return true;
-    });
-
-    return paginatedResponse(res, filteredRows, count, pageNum, limitNum, 'Recent files retrieved successfully');
+    return paginatedResponse(res, rows, count, pageNum, limitNum, 'Recent files retrieved successfully');
   } catch (error) {
     next(error);
   }
@@ -56,16 +48,10 @@ const recordAccess = async (req, res, next) => {
         id: file_id, 
         user_id: req.user.id
       },
-      include: [{ model: Folder, as: 'folder', attributes: ['is_locked'] }]
     });
 
     if (!file) {
       throw new NotFoundError('File not found');
-    }
-
-    // 🔒 Abaikan jika file ada di dalam Vault
-    if (file.folder && file.folder.is_locked) {
-      return successResponse(res, null, 'Vault files are excluded from recent history');
     }
 
     const [recentFile, created] = await RecentFile.findOrCreate({

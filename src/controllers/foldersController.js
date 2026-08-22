@@ -33,7 +33,6 @@ const getFolder = async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    // 1. Ambil folder TANPA include Children & Files terlebih dahulu
     const folder = await Folder.findOne({
       where: { id, user_id: req.user.id }
     });
@@ -42,17 +41,6 @@ const getFolder = async (req, res, next) => {
       throw new NotFoundError('Folder not found or has been moved to trash');
     }
 
-    // 2. CEK: Jika folder terkunci, LANGSUNG RETURN metadata saja!
-    //    Jangan include Children atau Files.
-    if (folder.is_locked) {
-      return successResponse(
-        res, 
-        folder, 
-        'Folder is locked. Please unlock with vault password to access contents.'
-      );
-    }
-
-    // 3. Jika TIDAK terkunci (folder biasa), baru tarik isi sub-folder dan files-nya
     const fullFolder = await Folder.findOne({
       where: { id, user_id: req.user.id },
       include: [
