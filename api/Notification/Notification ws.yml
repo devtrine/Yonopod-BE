@@ -1,11 +1,11 @@
 info:
-  name: test
+  name: Notification ws
   type: http
-  seq: 1
+  seq: 6
 
 http:
   method: POST
-  url: http://localhost:6767/api/v1/notifications
+  url: http://localhost:5000/api/v1/notifications/test
   auth: inherit
 
 settings:

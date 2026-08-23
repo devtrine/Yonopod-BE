@@ -1,0 +1,15 @@
+info:
+  name: Update
+  type: http
+  seq: 4
+
+http:
+  method: PATCH
+  url: http://localhost:5000/api/v1/notifications/52497b04-8196-4d46-b27e-6e01f9cf295b
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

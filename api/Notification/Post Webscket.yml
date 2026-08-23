@@ -1,0 +1,21 @@
+info:
+  name: Post Webscket
+  type: websocket
+  seq: 5
+
+websocket:
+  url: ws://localhost:5000/api/v1/ws
+  headers:
+    - name: Cookie
+      value: yono_token_t1=s%3AmwmQEhiOq6f2Gq7zkRa-soKjvQcmJcEq.0V0wyRNCvOG7dVcoMuqoVzsPoGijgqHNpcS0EgjoFDE; Path=/; Expires=Mon, 24 Aug 2026 15:14:08 GMT; HttpOnly; SameSite=Lax
+  message:
+    - title: message 1
+      selected: false
+      message:
+        type: json
+        data: ""
+  auth: inherit
+
+settings:
+  timeout: 0
+  keepAliveInterval: 0
