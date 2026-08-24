@@ -1,5 +1,7 @@
+const http = require('http');
 const app = require('./app');
 const { sequelize } = require('./models');
+const { initWebSocket } = require('./utils/websocket');
 
 const PORT = process.env.PORT || 3000;
 
@@ -12,7 +14,10 @@ const startServer = async () => {
       await sequelize.models.Session.sync();
     }
 
-    app.listen(PORT, () => {
+    const server = http.createServer(app);
+    initWebSocket(server, app.sessionMiddleware);
+
+    server.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
     });
   } catch (error) {
