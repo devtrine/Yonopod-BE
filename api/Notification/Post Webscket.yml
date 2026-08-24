@@ -1,0 +1,21 @@
+info:
+  name: Post Webscket
+  type: websocket
+  seq: 5
+
+websocket:
+  url: "{{host}}/api/v1/ws"
+  headers:
+    - name: Cookie
+      value: "\tyono_token_t1=s%3An5gOjAgsQIT0yFuiHP467ZGDBkP9Ogps.Fq87hy8X7E01tOsHbba62QVOO8aQCCSxa%2BYO3SH43aY"
+  message:
+    - title: message 1
+      selected: false
+      message:
+        type: json
+        data: ""
+  auth: inherit
+
+settings:
+  timeout: 0
+  keepAliveInterval: 0

@@ -1,11 +1,11 @@
 info:
-  name: test
+  name: Read all
   type: http
-  seq: 1
+  seq: 3
 
 http:
-  method: POST
-  url: http://localhost:6767/api/v1/notifications
+  method: GET
+  url: "{{host}}/api/v1/notification/read-all"
   auth: inherit
 
 settings:

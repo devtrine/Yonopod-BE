@@ -1,0 +1,15 @@
+info:
+  name: Update
+  type: http
+  seq: 7
+
+http:
+  method: PATCH
+  url: "{{host}}/api/v1/notifications/52497b04-8196-4d46-b27e-6e01f9cf295b"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

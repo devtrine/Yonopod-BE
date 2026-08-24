@@ -1,0 +1,24 @@
+info:
+  name: create notification
+  type: http
+  seq: 4
+
+http:
+  method: POST
+  url: "{{host}}/api/v1/notifications"
+  body:
+    type: json
+    data: |-
+      {
+        "title": "Welcome to Huby!",
+        "message": "Terima asndoiansd.",
+        "type": "info",
+        "data": { "action_url": "/dashboard" }
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

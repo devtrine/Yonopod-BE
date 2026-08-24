@@ -1,0 +1,15 @@
+info:
+  name: Notification ws
+  type: http
+  seq: 5
+
+http:
+  method: POST
+  url: "{{host}}/api/v1/notifications/test"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
