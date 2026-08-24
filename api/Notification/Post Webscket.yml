@@ -4,10 +4,10 @@ info:
   seq: 5
 
 websocket:
-  url: ws://localhost:5000/api/v1/ws
+  url: "{{host}}/api/v1/ws"
   headers:
     - name: Cookie
-      value: yono_token_t1=s%3AmwmQEhiOq6f2Gq7zkRa-soKjvQcmJcEq.0V0wyRNCvOG7dVcoMuqoVzsPoGijgqHNpcS0EgjoFDE; Path=/; Expires=Mon, 24 Aug 2026 15:14:08 GMT; HttpOnly; SameSite=Lax
+      value: "\tyono_token_t1=s%3An5gOjAgsQIT0yFuiHP467ZGDBkP9Ogps.Fq87hy8X7E01tOsHbba62QVOO8aQCCSxa%2BYO3SH43aY"
   message:
     - title: message 1
       selected: false

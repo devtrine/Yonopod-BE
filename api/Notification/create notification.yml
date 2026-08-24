@@ -1,17 +1,17 @@
 info:
   name: create notification
   type: http
-  seq: 1
+  seq: 4
 
 http:
   method: POST
-  url: http://localhost:5000/api/v1/notifications
+  url: "{{host}}/api/v1/notifications"
   body:
     type: json
     data: |-
       {
         "title": "Welcome to Huby!",
-        "message": "Terima kasih sudah mendaftar di sistem kami.",
+        "message": "Terima asndoiansd.",
         "type": "info",
         "data": { "action_url": "/dashboard" }
       }

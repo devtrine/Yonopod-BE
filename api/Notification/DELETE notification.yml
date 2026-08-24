@@ -1,11 +1,11 @@
 info:
   name: DELETE notification
   type: http
-  seq: 7
+  seq: 8
 
 http:
   method: DELETE
-  url: http://localhost:5000/api/v1/notifications/52497b04-8196-4d46-b27e-6e01f9cf295b
+  url: "{{host}}/api/v1/notifications/52497b04-8196-4d46-b27e-6e01f9cf295b"
   auth: inherit
 
 settings:
