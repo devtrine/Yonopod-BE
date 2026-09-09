@@ -1,24 +1,35 @@
-const { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, HeadObjectCommand, CopyObjectCommand } = require('@aws-sdk/client-s3');
-const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
-const huby = require("./signer")
+const s3 = require('./s3');
+const huby = require('./signer');
 
-exports.getPresignedUploadUrl = async (key, contentType, expiresIn = DEFAULT_EXPIRY) => {
-  const command = new PutObjectCommand({
-    Bucket: DEFAULT_BUCKET,
-    Key: key,
-    ContentType: contentType,
+exports.getPresignedUploadUrl = async (key, contentType, expiresIn = 300) => {
+  const result = await s3.presignUploadRequest({
+    method: 'PUT',
+    key,
+    contentType,
+    expiresIn
   });
-  return await getSignedUrl(s3Client, command, { expiresIn });
+  return result.url;
 };
 
-exports.generatePresignedDownloadUrl = async (key, expiresIn = huby.defaultExpiry) => {
-  return huby.resolve(key, expiresIn)
+exports.generatePresignedDownloadUrl = async (key, filename, expiresIn = 3600) => {
+  return await s3.getPresignedDownloadUrl(key, filename, expiresIn);
 };
 
 exports.generatePresignedUploadUrl = async (key) => {
-  return huby.put(key)
-}
+  const result = await s3.presignUploadRequest({
+    method: 'PUT',
+    key
+  });
+  return result.url;
+};
 
 exports.getFileStatus = async (key) => {
-  return huby.checkStatus(key)
+  return await s3.headObject(key);
 };
+
+exports.deleteFile = async (key) => {
+  return await s3.deleteObject(key);
+};
+
+// Expose legacy huby signer for backwards compatibility
+exports.legacyHuby = huby;
