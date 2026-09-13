@@ -1,0 +1,20 @@
+info:
+  name: Public Acces
+  type: http
+  seq: 4
+
+http:
+  method: GET
+  url: http://localhost:5000/api/v1/shares/public/{{id}}
+
+runtime:
+  variables:
+    - name: id
+      value: e7b7378f-3530-43d0-a204-01fd6df992ca
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

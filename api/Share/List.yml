@@ -1,11 +1,11 @@
 info:
-  name: Get Folder
+  name: List
   type: http
   seq: 2
 
 http:
   method: GET
-  url: http://localhost:5000/api/v1/folders/a00cce7c-602d-4f84-b88d-25bcff772167
+  url: http://localhost:5000/api/v1/shares
   auth: inherit
 
 settings:
@@ -13,4 +13,4 @@ settings:
   timeout: 0
   followRedirects: true
   maxRedirects: 5
-  forwardAuthorizationHeader: true
+  forwardAuthorizationHeader: false

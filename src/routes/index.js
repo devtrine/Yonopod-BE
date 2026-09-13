@@ -10,6 +10,7 @@ const recentRoutes = require('./recent');
 const searchRoutes = require('./search');
 const notificationsRoutes = require('./notifications');
 const auditRoutes = require('./auditRoutes');
+const shareRoutes = require('./shareRoutes');
 
 router.use('/auth', authRoutes);
 router.use('/files', filesRoutes);
@@ -20,6 +21,7 @@ router.use('/recent', recentRoutes);
 router.use('/search', searchRoutes);
 router.use('/notifications', notificationsRoutes);
 router.use('/logs', auditRoutes);
+router.use('/shares', shareRoutes);
 
 router.get('/', (req, res) => {
   res.json({

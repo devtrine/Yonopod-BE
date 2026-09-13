@@ -5,7 +5,7 @@ info:
 
 http:
   method: PUT
-  url: http://localhost:6767/api/v1/files/{{id}}
+  url: http://localhost:5000/api/v1/files/{{id}}
   body:
     type: form-urlencoded
     data:

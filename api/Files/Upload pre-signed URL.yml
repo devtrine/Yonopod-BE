@@ -5,7 +5,7 @@ info:
 
 http:
   method: POST
-  url: "{{host}}/api/v1/files/presign-upload"
+  url: http://localhost:5000/api/v1/files/presign-upload
   body:
     type: form-urlencoded
     data:
@@ -22,3 +22,4 @@ settings:
   timeout: 0
   followRedirects: true
   maxRedirects: 5
+  forwardAuthorizationHeader: true

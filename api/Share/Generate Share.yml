@@ -1,0 +1,23 @@
+info:
+  name: Generate Share
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: http://localhost:5000/api/v1/shares
+  body:
+    type: json
+    data: |-
+      {
+        "file_id": "218a39bf-d706-41f0-9d6a-436f89270d18",
+        "valid_until": "2026-09-17"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

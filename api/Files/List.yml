@@ -5,7 +5,7 @@ info:
 
 http:
   method: GET
-  url: "{{host}}/api/v1/files"
+  url: http://localhost:5000/api/v1/files
   auth: inherit
 
 settings:
@@ -13,3 +13,4 @@ settings:
   timeout: 0
   followRedirects: true
   maxRedirects: 5
+  forwardAuthorizationHeader: true
