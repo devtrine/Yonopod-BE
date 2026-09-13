@@ -4,6 +4,7 @@ const { NotFoundError, UnauthorizedError, ForbiddenError } = require('../utils/e
 const huby = require('../huby/signer');
 const { v4: uuidv4 } = require('uuid');
 const { Op } = require('sequelize');
+const { createAuditLog } = require('../utils/auditLogger');
 
 const listFiles = async (req, res, next) => {
   try {
@@ -90,6 +91,13 @@ const presignUpload = async (req, res, next) => {
     req.user.storage_used = used + BigInt(size);
     await req.user.save();
 
+    await createAuditLog({
+      userId: req.user.id,
+      fileId: file.id,
+      event: 'CREATE',
+      message: `Menginisiasi unggahan untuk file "${file.name}"`
+    });
+
     return successResponse(res, { uploadUrl, file }, 'Presigned URL generated successfully');
   } catch (error) {
     next(error);
@@ -114,6 +122,13 @@ const confirmUpload = async (req, res, next) => {
 
     await req.user.save();
 
+    await createAuditLog({
+      userId: req.user.id,
+      fileId: file.id,
+      event: 'CREATE',
+      message: `Berhasil menyelesaikan unggahan file "${file.name}"`
+    });
+
     return successResponse(res, file, 'File uploaded and confirmed successfully', 201);
   } catch (error) {
     next(error);
@@ -130,6 +145,12 @@ const downloadFile = async (req, res, next) => {
     if (!file) throw new NotFoundError('File not found');
 
     const downloadUrl = await huby.resolve(file.file_path);
+    await createAuditLog({
+      userId: req.user.id,
+      fileId: file.id,
+      event: 'DOWNLOAD',
+      message: `Mengunduh file "${file.name}"`
+    });
 
     return successResponse(res, { downloadUrl }, 'Download URL generated successfully');
   } catch (error) {
@@ -159,6 +180,13 @@ const updateFile = async (req, res, next) => {
       file_id: file.id
     })
 
+    await createAuditLog({
+      userId: req.user.id,
+      fileId: file.id,
+      event: 'UPDATE',
+      message: `Memperbarui detail atau memindahkan file "${file.name}"`
+    });
+
     return successResponse(res, file, 'File updated successfully');
   } catch (error) {
     next(error);
@@ -174,6 +202,13 @@ const softDelete = async (req, res, next) => {
 
     if (!file) throw new NotFoundError('File not found');
     await file.destroy();
+
+    await createAuditLog({
+      userId: req.user.id,
+      fileId: file.id,
+      event: 'DELETE',
+      message: `Memindahkan file "${file.name}" ke tempat sampah`
+    });
 
     return successResponse(res, file, 'File soft deleted successfully');
   } catch (error) {
@@ -192,6 +227,13 @@ const restore = async (req, res, next) => {
     if (!file) throw new NotFoundError('File not found in trash');
 
     await file.restore();
+
+    await createAuditLog({
+      userId: req.user.id,
+      fileId: file.id,
+      event: 'UPDATE',
+      message: `Memulihkan file "${file.name}" dari tempat sampah`
+    });
 
     return successResponse(res, null, 'File restored successfully');
   } catch (error) {
@@ -223,6 +265,13 @@ const permanentDelete = async (req, res, next) => {
       force: true
     });
 
+    await createAuditLog({
+      userId: req.user.id,
+      fileId: file.id, // Akan diset null oleh database setelah file di-destroy
+      event: 'DELETE',
+      message: `Menghapus file "${file.name}" secara permanen`
+    });
+    
     return successResponse(res, null, 'File permanently deleted successfully');
   } catch (error) {
     next(error);

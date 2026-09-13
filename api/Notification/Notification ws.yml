@@ -6,6 +6,14 @@ info:
 http:
   method: POST
   url: http://localhost:5000/api/v1/notifications/test
+  body:
+    type: json
+    data: |-
+      {
+        "title": "Pesan Masuk!",
+        "message": "Ini adalah pengujian WebSocket dari HTTP request.",
+        "type": "info"
+      }
   auth: inherit
 
 settings:

@@ -1,11 +1,11 @@
 info:
-  name: Read all
+  name: Folders
   type: http
-  seq: 8
+  seq: 2
 
 http:
-  method: PATCH
-  url: http://localhost:5000/api/v1/notifications/read-all
+  method: GET
+  url: http://localhost:5000/api/v1/logs/folders
   auth: inherit
 
 settings:
@@ -13,3 +13,4 @@ settings:
   timeout: 0
   followRedirects: true
   maxRedirects: 5
+  forwardAuthorizationHeader: false

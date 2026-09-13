@@ -3,7 +3,18 @@ const { Model } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
   class AuditLog extends Model {
     static associate(models) {
-      AuditLog.belongsTo(models.User, { foreignKey: 'user_id' });
+      // Relasi ke User (Pelaku aktivitas)
+      AuditLog.belongsTo(models.User, { foreignKey: 'user_id', as: 'user' });
+      
+      // Relasi ke Folder (Opsional)
+      if (models.Folder) {
+        AuditLog.belongsTo(models.Folder, { foreignKey: 'folder_id', as: 'folder' });
+      }
+      
+      // Relasi ke File (Opsional)
+      if (models.File) {
+        AuditLog.belongsTo(models.File, { foreignKey: 'file_id', as: 'file' });
+      }
     }
   }
   
@@ -15,23 +26,24 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false
     },
     user_id: {
-      type: DataTypes.UUID
-    },
-    action: {
-      type: DataTypes.STRING(100),
+      type: DataTypes.UUID,
       allowNull: false
     },
-    target_type: {
-      type: DataTypes.STRING(50)
+    folder_id: {
+      type: DataTypes.UUID,
+      allowNull: true
     },
-    target_id: {
-      type: DataTypes.UUID
+    file_id: {
+      type: DataTypes.UUID,
+      allowNull: true
     },
-    details: {
-      type: DataTypes.STRING(500)
+    event: {
+      type: DataTypes.ENUM('CREATE', 'READ', 'UPDATE', 'DELETE', 'DOWNLOAD', 'MOVE'),
+      allowNull: false
     },
-    ip_address: {
-      type: DataTypes.STRING(45)
+    message: {
+      type: DataTypes.TEXT,
+      allowNull: false
     }
   }, {
     sequelize,
@@ -40,7 +52,7 @@ module.exports = (sequelize, DataTypes) => {
     underscored: true,
     timestamps: true,
     createdAt: 'created_at',
-    updatedAt: false
+    updatedAt: 'updated_at'
   });
   
   return AuditLog;

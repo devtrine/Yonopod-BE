@@ -1,5 +1,3 @@
-'use strict';
-
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable('audit_logs', {
@@ -7,42 +5,62 @@ module.exports = {
         allowNull: false,
         primaryKey: true,
         type: Sequelize.UUID,
-        defaultValue: Sequelize.UUIDV4,
+        defaultValue: Sequelize.UUIDV4
       },
       user_id: {
         type: Sequelize.UUID,
-        allowNull: true,
+        allowNull: false,
         references: {
-          model: 'users',
-          key: 'id',
+          model: 'users', // Sesuaikan jika nama tabel usermu berbeda
+          key: 'id'
         },
         onUpdate: 'CASCADE',
-        onDelete: 'SET NULL',
+        onDelete: 'CASCADE'
       },
-      action: {
-        type: Sequelize.STRING(100),
-        allowNull: false,
-      },
-      target_type: {
-        type: Sequelize.STRING(50),
-      },
-      target_id: {
+      folder_id: {
         type: Sequelize.UUID,
+        allowNull: true, // Nullable untuk kondisi log File
+        references: {
+          model: 'folders',
+          key: 'id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'SET NULL'
       },
-      details: {
-        type: Sequelize.STRING(500),
+      file_id: {
+        type: Sequelize.UUID,
+        allowNull: true, // Nullable untuk kondisi log Folder
+        references: {
+          model: 'files',
+          key: 'id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'SET NULL'
       },
-      ip_address: {
-        type: Sequelize.STRING(45),
+      event: {
+        type: Sequelize.ENUM('CREATE', 'READ', 'UPDATE', 'DELETE', 'DOWNLOAD', 'MOVE'),
+        allowNull: false
+      },
+      message: {
+        type: Sequelize.TEXT,
+        allowNull: false
       },
       created_at: {
         allowNull: false,
         type: Sequelize.DATE,
+        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
       },
+      updated_at: {
+        allowNull: false,
+        type: Sequelize.DATE,
+        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
+      }
     });
   },
 
   async down(queryInterface, Sequelize) {
     await queryInterface.dropTable('audit_logs');
+    // Jika pakai PostgreSQL, opsional drop type ENUM:
+    // await queryInterface.sequelize.query('DROP TYPE IF EXISTS "enum_audit_logs_event";');
   }
 };

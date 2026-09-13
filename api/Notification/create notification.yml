@@ -11,7 +11,7 @@ http:
     data: |-
       {
         "title": "Welcome to Huby!",
-        "message": "Terima kasih sudah mendaftar di sistem kami.",
+        "message": "Das Ist Mein",
         "type": "info",
         "data": { "action_url": "/dashboard" }
       }
