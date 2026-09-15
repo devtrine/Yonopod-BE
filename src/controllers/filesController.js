@@ -111,11 +111,6 @@ const s3Presign = async (req, res, next) => {
         const sanitizedFilename = s3.sanitizeFilename(key);
         finalKey = `uploads/${req.user.id}/${uuidv4()}-${sanitizedFilename}`;
       }
-    } else {
-      // Verifikasi hak akses key untuk operasi kelanjutan
-      if (!key.startsWith(`uploads/${req.user.id}/`)) {
-        throw new ForbiddenError('Unauthorized key access');
-      }
     }
 
     const result = await s3.presignUploadRequest({
@@ -199,11 +194,6 @@ const confirmUpload = async (req, res, next) => {
 
     if (!finalKey) {
       throw new ValidationError('Object key is required');
-    }
-
-    // Verifikasi keamanan kepemilikan key
-    if (!finalKey.startsWith(`uploads/${req.user.id}/`)) {
-      throw new ForbiddenError('Unauthorized key access');
     }
 
     // Verifikasi file ke S3 storage jika didukung provider
