@@ -1,11 +1,11 @@
 info:
   name: Read all
   type: http
-  seq: 8
+  seq: 3
 
 http:
   method: PATCH
-  url: http://localhost:5000/api/v1/notifications/read-all
+  url: {{host}}/api/v1/notifications/read-all
   auth: inherit
 
 settings:

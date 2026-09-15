@@ -1,11 +1,11 @@
 info:
   name: Get By Id
   type: http
-  seq: 3
+  seq: 2
 
 http:
   method: GET
-  url: http://localhost:5000/api/v1/notifications/52497b04-8196-4d46-b27e-6e01f9cf295b
+  url: "{{host}}/api/v1/notifications/9471bc1f-d519-4845-8bd9-063bc249f7c6"
   auth: inherit
 
 settings:
