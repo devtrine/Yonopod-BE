@@ -2,7 +2,9 @@ const { Folder, File } = require('../models');
 const { successResponse, paginatedResponse } = require('../utils/response');
 const { NotFoundError, ForbiddenError, BadRequestError } = require('../utils/errors');
 const bcrypt = require('bcryptjs');
+const { calculateFolderSizeRecursively, formatBytes } = require('../utils/folderAnalyze');
 const { Op, Association } = require('sequelize');
+const { createAuditLog } = require('../utils/auditLogger');
 
 const listFolders = async (req, res, next) => {
   try {
@@ -22,8 +24,24 @@ const listFolders = async (req, res, next) => {
       limit: limitNum,
       offset
     });
-    
-    return paginatedResponse(res, rows, count, pageNum, limitNum, 'Folders retrieved successfully');
+
+    const foldersWithSize = await Promise.all(
+      rows.map(async (folder) => {
+        // Panggil fungsi rekursif untuk masing-masing folder
+        const totalBytes = await calculateFolderSizeRecursively(folder.id, req.user.id);
+
+        // Ubah instance sequelize ke JSON lalu sisipkan size_info
+        const folderData = folder.toJSON();
+        folderData.size_info = {
+          total_bytes: totalBytes,
+          formatted_size: formatBytes(totalBytes)
+        };
+
+        return folderData;
+      })
+    );
+
+    return paginatedResponse(res, foldersWithSize, count, pageNum, limitNum, 'Folders retrieved successfully');
   } catch (error) {
     next(error);
   }
@@ -49,7 +67,16 @@ const getFolder = async (req, res, next) => {
       ]
     });
 
-    return successResponse(res, fullFolder, 'Folder retrieved successfully');
+    const totalBytes = await calculateFolderSizeRecursively(folder.id, req.user.id);
+    const formattedSize = formatBytes(totalBytes);
+    const folderData = fullFolder.toJSON();
+
+    folderData.Size_info = {
+      totalBytes,
+      formattedSize
+    };
+
+    return successResponse(res, folderData, 'Folder retrieved successfully');
   } catch (error) {
     next(error);
   }
@@ -59,7 +86,7 @@ const createFolder = async (req, res, next) => {
   try {
     const { name, parent_id } = req.body;
     if (!name) throw new BadRequestError('Folder name is required');
-    
+
     let path = `/${name}`;
     if (parent_id) {
       const parent = await Folder.findOne({ where: { id: parent_id, user_id: req.user.id } });
@@ -72,6 +99,13 @@ const createFolder = async (req, res, next) => {
       name,
       parent_id: parent_id || null,
       path
+    });
+
+    await createAuditLog({
+      userId: req.user.id,
+      folderId: folder.id,
+      event: 'CREATE',
+      message: `Membuat folder baru "${folder.name}"`
     });
 
     return successResponse(res, folder, 'Folder created successfully', 201);
@@ -98,7 +132,7 @@ const updateFolder = async (req, res, next) => {
 
     const oldPath = folder.path;
     if (name !== undefined) folder.name = name;
-    
+
     if (parent_id !== undefined) {
       folder.parent_id = parent_id || null;
       let newParentPath = '';
@@ -132,6 +166,13 @@ const updateFolder = async (req, res, next) => {
       }
     }
 
+    await createAuditLog({
+      userId: req.user.id,
+      folderId: folder.id,
+      event: 'UPDATE',
+      message: `Memperbarui data atau nama folder menjadi "${folder.name}"`
+    });
+
     return successResponse(res, folder, 'Folder updated successfully');
   } catch (error) {
     next(error);
@@ -150,6 +191,13 @@ const softDelete = async (req, res, next) => {
     // Bawaan Sequelize paranoid: true, destroy() akan mengisi deleted_at
     await folder.destroy();
 
+    await createAuditLog({
+      userId: req.user.id,
+      folderId: folder.id,
+      event: 'DELETE',
+      message: `Memindahkan folder "${folder.name} ke tempat sampah"`
+    });
+
     return successResponse(res, null, 'Folder soft deleted successfully');
   } catch (error) {
     next(error);
@@ -159,11 +207,11 @@ const softDelete = async (req, res, next) => {
 const restore = async (req, res, next) => {
   try {
     const { id } = req.params;
-    
+
     // Gunakan paranoid: false untuk mencari record yang sudah terhapus
     const folder = await Folder.findOne({
-      where: { 
-        id, 
+      where: {
+        id,
         user_id: req.user.id,
         deleted_at: { [Op.ne]: null }
       },
@@ -174,6 +222,13 @@ const restore = async (req, res, next) => {
 
     // Bawaan Sequelize paranoid: true, restore() akan mengosongkan deleted_at
     await folder.restore();
+
+    await createAuditLog({
+      userId: req.user.id,
+      folderId: folder.id,
+      event: 'UPDATE',
+      message: `Memulihkan folder "${folder.name}" dari tempat sampah`
+    });
 
     return successResponse(res, null, 'Folder restored successfully');
   } catch (error) {
@@ -193,6 +248,13 @@ const permanentDelete = async (req, res, next) => {
 
     // force: true menghapus record secara permanen dari DB
     await folder.destroy({ force: true });
+
+    await createAuditLog({
+      userId: req.user.id,
+      folderId: folder.id,
+      event: 'DELETE',
+      message: `Menghapus folder "${folder.name}" secara permanen`
+    });
 
     return successResponse(res, null, 'Folder permanently deleted successfully');
   } catch (error) {
@@ -219,11 +281,11 @@ const listTrash = async (req, res, next) => {
     });
 
     return paginatedResponse(
-      res, 
-      rows, 
-      count, 
-      pageNum, 
-      limitNum, 
+      res,
+      rows,
+      count,
+      pageNum,
+      limitNum,
       'Trash listed successfully'
     );
   } catch (error) {
