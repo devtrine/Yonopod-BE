@@ -7,14 +7,24 @@ const presignUploadSchema = Joi.object({
   folder_id: Joi.string().uuid().optional().allow(null),
 });
 
+const s3PresignSchema = Joi.object({
+  method: Joi.string().valid('PUT', 'POST', 'DELETE', 'GET').required(),
+  key: Joi.string().required(),
+  uploadId: Joi.string().optional().allow(null, ''),
+  partNumber: Joi.number().integer().min(1).optional().allow(null),
+  contentType: Joi.string().optional().allow(null, ''),
+  size: Joi.number().integer().min(0).optional().allow(null)
+});
+
 const confirmUploadSchema = Joi.object({
-  file_key: Joi.string().required(),
-  name: Joi.string().optional(),
-  extension: Joi.string().optional().allow(''),
+  key: Joi.string().optional(),
+  file_key: Joi.string().optional(),
+  name: Joi.string().required(),
+  extension: Joi.string().optional().allow('', null),
   folder_id: Joi.string().uuid().optional().allow(null),
   checksum: Joi.string().optional().allow(null, ''),
   size: Joi.number().integer().optional().default(0)
-});
+}).or('key', 'file_key');
 
 const updateFileSchema = Joi.object({
   name: Joi.string().max(255).optional(),
@@ -34,6 +44,7 @@ const listFilesQuery = Joi.object({
 
 module.exports = {
   presignUploadSchema,
+  s3PresignSchema,
   confirmUploadSchema,
   updateFileSchema,
   listFilesQuery
