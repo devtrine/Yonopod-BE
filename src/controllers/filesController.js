@@ -1,6 +1,7 @@
-const { File, Folder, Tag, User, RecentFile, Favorite } = require('../models');
+const path = require('path');
+const { File, Folder, Tag, User, RecentFile, Favorite, sequelize } = require('../models');
 const { successResponse, paginatedResponse, errorResponse } = require('../utils/response');
-const { NotFoundError, UnauthorizedError, ForbiddenError, ValidationError } = require('../utils/errors');
+const { NotFoundError, UnauthorizedError, ForbiddenError, ValidationError, ConflictError } = require('../utils/errors');
 const huby = require('../huby/signer');
 const s3 = require('../huby/s3');
 const { v4: uuidv4 } = require('uuid');
@@ -92,25 +93,129 @@ const getS3Config = async (req, res, next) => {
  */
 const s3Presign = async (req, res, next) => {
   try {
-    const { method, key, uploadId, partNumber, contentType, size } = req.body;
-    const isInitialRequest = (method === 'PUT' && !uploadId) || (method === 'POST' && !uploadId);
+    const { method, key, uploadId, partNumber, contentType, size, name, extension, folder_id } = req.body;
 
+    // Cegah path traversal (YONO-02)
+    if (!key || key.includes('..')) {
+      throw new ForbiddenError('Invalid key format');
+    }
+
+    const isInitialRequest = (method === 'PUT' && !uploadId) || (method === 'POST' && !uploadId);
     let finalKey = key;
+    let fileRecord = null;
+    const bypassHook = process.env.BHV_BYPASS_HOOK === 'true';
 
     if (isInitialRequest) {
-      // Validasi kuota jika ukuran file diberikan
+      // Validasi kuota jika ukuran file diberikan (YONO-11)
+      const used = BigInt(req.user.storage_used || 0);
+      const quota = BigInt(req.user.storage_quota || 0);
       if (size !== undefined && size !== null) {
-        const used = BigInt(req.user.storage_used || 0);
-        const quota = BigInt(req.user.storage_quota || 0);
         if (used + BigInt(size) > quota) {
           throw new ForbiddenError('Storage quota exceeded');
         }
       }
 
-      // Format path terisolasi per user: uploads/${req.user.id}/${uuid}-${sanitizedFilename}
-      if (!key.startsWith(`uploads/${req.user.id}/`)) {
-        const sanitizedFilename = s3.sanitizeFilename(key);
-        finalKey = `uploads/${req.user.id}/${uuidv4()}-${sanitizedFilename}`;
+      // Validasi folder_id jika disertakan
+      if (folder_id) {
+        const folder = await Folder.findOne({
+          where: { id: folder_id, user_id: req.user.id }
+        });
+        if (!folder) {
+          throw new NotFoundError('Target folder not found');
+        }
+      }
+
+      // Format path terisolasi aman per user di bawah kontrol server: uploads/${req.user.id}/${uuid}-${sanitizedFilename}
+      const rawName = name || path.basename(key);
+      const sanitizedFilename = s3.sanitizeFilename(rawName);
+      finalKey = `uploads/${req.user.id}/${uuidv4()}-${sanitizedFilename}`;
+
+      let fileExt = extension;
+      if (!fileExt && rawName && rawName.includes('.')) {
+        fileExt = rawName.split('.').pop();
+      }
+
+      // Record File dibuat secara otomatis saat CreateMultipartUpload / PutObject
+      if (bypassHook && method === 'PUT') {
+        // Auto-confirm untuk Single PUT saat BHV_BYPASS_HOOK aktif
+        const actualSize = BigInt(size || 0);
+        await sequelize.transaction(async (t) => {
+          const user = await User.findByPk(req.user.id, { transaction: t, lock: t.LOCK.UPDATE });
+          const currentUsed = BigInt(user.storage_used || 0);
+          const currentQuota = BigInt(user.storage_quota || 0);
+          if (currentUsed + actualSize > currentQuota) {
+            throw new ForbiddenError('Storage quota exceeded');
+          }
+
+          fileRecord = await File.create({
+            user_id: req.user.id,
+            folder_id: folder_id || null,
+            name: rawName,
+            file_path: finalKey,
+            extension: fileExt || '',
+            size: actualSize.toString(),
+            created_at: new Date()
+          }, { transaction: t });
+
+          user.storage_used = currentUsed + actualSize;
+          await user.save({ transaction: t });
+          req.user.storage_used = user.storage_used;
+        });
+      } else {
+        // Standard mode (BHV_BYPASS_HOOK=false atau Multipart): simpan record dengan size: 0
+        fileRecord = await File.create({
+          user_id: req.user.id,
+          folder_id: folder_id || null,
+          name: rawName,
+          file_path: finalKey,
+          extension: fileExt || '',
+          size: '0',
+          created_at: new Date()
+        });
+      }
+    } else {
+      // Verifikasi hak akses key untuk operasi kelanjutan multipart (YONO-02)
+      const expectedPrefix = `uploads/${req.user.id}/`;
+      if (!key.startsWith(expectedPrefix)) {
+        throw new ForbiddenError('Unauthorized key access');
+      }
+      finalKey = key;
+
+      // Jika BHV_BYPASS_HOOK aktif dan ini adalah CompleteMultipartUpload (POST dengan uploadId):
+      if (bypassHook && method === 'POST' && uploadId) {
+        const existingFile = await File.findOne({
+          where: { file_path: finalKey, user_id: req.user.id }
+        });
+        if (existingFile && BigInt(existingFile.size || 0) === 0n) {
+          let headResult = null;
+          try {
+            headResult = await s3.headObject(finalKey);
+          } catch (err) {
+            // Abaikan jika HEAD belum tersedia
+          }
+          const actualSize = BigInt(headResult?.ContentLength ?? size ?? 0);
+          const etag = headResult?.ETag ? headResult.ETag.replace(/['"]/g, '') : null;
+
+          if (actualSize > 0n) {
+            await sequelize.transaction(async (t) => {
+              const user = await User.findByPk(req.user.id, { transaction: t, lock: t.LOCK.UPDATE });
+              const currentUsed = BigInt(user.storage_used || 0);
+              const currentQuota = BigInt(user.storage_quota || 0);
+              if (currentUsed + actualSize > currentQuota) {
+                throw new ForbiddenError('Storage quota exceeded');
+              }
+
+              existingFile.size = actualSize.toString();
+              if (etag) existingFile.checksum = etag;
+              await existingFile.save({ transaction: t });
+
+              user.storage_used = currentUsed + actualSize;
+              await user.save({ transaction: t });
+              req.user.storage_used = user.storage_used;
+              fileRecord = existingFile;
+            });
+          }
+        }
       }
     }
 
@@ -128,7 +233,8 @@ const s3Presign = async (req, res, next) => {
       key: result.key,
       data: {
         url: result.url,
-        key: result.key
+        key: result.key,
+        file: fileRecord || undefined
       },
       message: 'Presigned URL generated successfully'
     });
@@ -191,9 +297,9 @@ const presignUpload = async (req, res, next) => {
 };
 
 /**
+ * @deprecated
  * Endpoint Konfirmasi Upload setelah file selesai diunggah ke S3.
- * Memvalidasi keberadaan file langsung di S3 via HeadObjectCommand,
- * mencatat record ke DB File, dan memperbarui kuota storage_used user.
+ * Deprecated: konfirmasi upload ditangani oleh webhook S3 (confirmUploadFromWebhook) atau BHV_BYPASS_HOOK.
  */
 const confirmUpload = async (req, res, next) => {
   try {
@@ -204,7 +310,33 @@ const confirmUpload = async (req, res, next) => {
       throw new ValidationError('Object key is required');
     }
 
-    // Verifikasi file ke S3 storage jika didukung provider
+    res.set('X-Deprecated', 'confirmUpload is deprecated. Upload confirmation is handled via S3 webhook.');
+
+    // Verifikasi keamanan kepemilikan key & cegah path traversal (YONO-01)
+    const expectedPrefix = `uploads/${req.user.id}/`;
+    if (!finalKey.startsWith(expectedPrefix) || finalKey.includes('..')) {
+      throw new ForbiddenError('Unauthorized key access');
+    }
+
+    const bypassHook = process.env.BHV_BYPASS_HOOK === 'true';
+
+    // Jika BHV_BYPASS_HOOK aktif, kembalikan record file yang sudah dibuat/dikonfirmasi
+    if (bypassHook) {
+      const existingFile = await File.findOne({
+        where: { file_path: finalKey, user_id: req.user.id }
+      });
+      if (existingFile) {
+        return successResponse(res, existingFile, 'File confirmed successfully', 200);
+      }
+    } else {
+      // Jika BHV_BYPASS_HOOK false, konfirmasi hanya ditangani oleh confirmUploadFromWebhook
+      return res.status(410).json({
+        status: 'error',
+        message: 'confirmUpload is deprecated. Upload confirmation is handled exclusively via S3 provider webhook.'
+      });
+    }
+
+    // Fallback jika record belum terbuat di DB saat bypassHook aktif
     let headResult = null;
     try {
       headResult = await s3.headObject(finalKey);
@@ -212,39 +344,41 @@ const confirmUpload = async (req, res, next) => {
       if (err.name === 'NotFound' || err.$metadata?.httpStatusCode === 404) {
         throw new NotFoundError('File tidak ditemukan di storage S3. Pastikan upload telah selesai.');
       }
-      // Pada provider S3-compatible tertentu yang menolak method HEAD (e.g. 403 UnknownError),
-      // gunakan fallback metadata dari payload request
       console.warn(`[confirmUpload] HeadObject gagal (${err.message}), melanjutkan dengan metadata request.`);
     }
 
     const actualSize = BigInt(headResult?.ContentLength ?? req.body.size ?? 0);
     const etag = headResult?.ETag ? headResult.ETag.replace(/['"]/g, '') : (checksum || null);
 
-    // Cek kuota dengan ukuran aktual dari S3
-    const used = BigInt(req.user.storage_used || 0);
-    const quota = BigInt(req.user.storage_quota || 0);
-    if (used + actualSize > quota) {
-      throw new ForbiddenError('Storage quota exceeded');
-    }
-
     let fileExt = extension;
     if (!fileExt && name && name.includes('.')) {
       fileExt = name.split('.').pop();
     }
 
-    const file = await File.create({
-      user_id: req.user.id,
-      folder_id: folder_id || null,
-      name,
-      file_path: finalKey,
-      extension: fileExt || '',
-      checksum: etag || null,
-      size: actualSize.toString(),
-      created_at: new Date()
-    });
+    let file;
+    await sequelize.transaction(async (t) => {
+      const user = await User.findByPk(req.user.id, { transaction: t, lock: t.LOCK.UPDATE });
+      const used = BigInt(user.storage_used || 0);
+      const quota = BigInt(user.storage_quota || 0);
+      if (used + actualSize > quota) {
+        throw new ForbiddenError('Storage quota exceeded');
+      }
 
-    req.user.storage_used = used + actualSize;
-    await req.user.save();
+      file = await File.create({
+        user_id: req.user.id,
+        folder_id: folder_id || null,
+        name,
+        file_path: finalKey,
+        extension: fileExt || '',
+        checksum: etag || null,
+        size: actualSize.toString(),
+        created_at: new Date()
+      }, { transaction: t });
+
+      user.storage_used = used + actualSize;
+      await user.save({ transaction: t });
+      req.user.storage_used = user.storage_used;
+    });
 
     await createAuditLog({
       userId: req.user.id,
@@ -254,6 +388,79 @@ const confirmUpload = async (req, res, next) => {
     });
 
     return successResponse(res, file, 'File uploaded and confirmed successfully', 201);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * S3 Provider Webhook Endpoint
+ * Dipanggil oleh S3 Provider setelah upload berhasil ke bucket S3.
+ * Mengupdate size file dan storage_used user secara atomik.
+ */
+const confirmUploadFromWebhook = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    const webhookSecret = process.env.S3_WEBHOOK_SECRET;
+
+    if (!webhookSecret || !authHeader || !authHeader.startsWith('Bearer ')) {
+      throw new UnauthorizedError('Invalid or missing webhook bearer token');
+    }
+
+    const token = authHeader.substring(7).trim();
+    if (token !== webhookSecret) {
+      throw new UnauthorizedError('Invalid or missing webhook bearer token');
+    }
+
+    const { key, size, etag } = req.body;
+
+    if (!key || key.includes('..')) {
+      throw new ForbiddenError('Invalid key format');
+    }
+
+    const file = await File.findOne({
+      where: { file_path: key },
+      paranoid: false
+    });
+
+    if (!file) {
+      throw new NotFoundError(`File record not found for key: ${key}`);
+    }
+
+    if (BigInt(file.size || 0) > 0n || file.checksum) {
+      throw new ConflictError('File already confirmed');
+    }
+
+    const actualSize = BigInt(size || 0);
+
+    await sequelize.transaction(async (t) => {
+      const user = await User.findByPk(file.user_id, {
+        transaction: t,
+        lock: t.LOCK.UPDATE
+      });
+
+      if (!user) {
+        throw new NotFoundError('User not found');
+      }
+
+      const currentUsed = BigInt(user.storage_used || 0);
+      const currentQuota = BigInt(user.storage_quota || 0);
+
+      if (currentUsed + actualSize > currentQuota) {
+        throw new ForbiddenError('Storage quota exceeded');
+      }
+
+      file.size = actualSize.toString();
+      if (etag) {
+        file.checksum = etag.replace(/['"]/g, '');
+      }
+      await file.save({ transaction: t });
+
+      user.storage_used = currentUsed + actualSize;
+      await user.save({ transaction: t });
+    });
+
+    return successResponse(res, file, 'File confirmed via S3 webhook successfully', 200);
   } catch (error) {
     next(error);
   }
@@ -447,6 +654,7 @@ module.exports = {
   s3Presign,
   presignUpload,
   confirmUpload,
+  confirmUploadFromWebhook,
   downloadFile,
   updateFile,
   softDelete,
