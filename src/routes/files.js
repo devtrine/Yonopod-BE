@@ -3,14 +3,18 @@ const { requireAuth } = require('../middlewares/auth');
 const { validate } = require('../middlewares/validate');
 const { 
   presignUploadSchema, 
-  s3PresignSchema,
+  s3PresignSchema, 
   confirmUploadSchema, 
+  s3WebhookSchema,
   updateFileSchema, 
   listFilesQuery 
 } = require('../validators/filesValidator');
 const filesController = require('../controllers/filesController');
 
 const router = express.Router();
+
+// S3 Provider Webhook Endpoint (authenticated via Bearer token)
+router.post('/s3/webhook', validate(s3WebhookSchema), filesController.confirmUploadFromWebhook);
 
 router.use(requireAuth);
 
