@@ -6,6 +6,7 @@ const { calculateFolderSizeRecursively, formatBytes } = require('../utils/folder
 const { Op, Association } = require('sequelize');
 const { createAuditLog } = require('../utils/auditLogger');
 
+
 const listFolders = async (req, res, next) => {
   try {
     const { parent_id, page = 1, limit = 20 } = req.query;
@@ -25,23 +26,7 @@ const listFolders = async (req, res, next) => {
       offset
     });
 
-    const foldersWithSize = await Promise.all(
-      rows.map(async (folder) => {
-        // Panggil fungsi rekursif untuk masing-masing folder
-        const totalBytes = await calculateFolderSizeRecursively(folder.id, req.user.id);
-
-        // Ubah instance sequelize ke JSON lalu sisipkan size_info
-        const folderData = folder.toJSON();
-        folderData.size_info = {
-          total_bytes: totalBytes,
-          formatted_size: formatBytes(totalBytes)
-        };
-
-        return folderData;
-      })
-    );
-
-    return paginatedResponse(res, foldersWithSize, count, pageNum, limitNum, 'Folders retrieved successfully');
+    return paginatedResponse(res, rows, count, pageNum, limitNum, 'Folders retrieved successfully');
   } catch (error) {
     next(error);
   }

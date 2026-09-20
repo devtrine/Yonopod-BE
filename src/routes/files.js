@@ -7,7 +7,9 @@ const {
   confirmUploadSchema, 
   s3WebhookSchema,
   updateFileSchema, 
-  listFilesQuery 
+  listFilesQuery,
+  recentFilesQuery,
+  largestFilesQuery
 } = require('../validators/filesValidator');
 const filesController = require('../controllers/filesController');
 
@@ -26,6 +28,8 @@ router.post('/confirm-upload', validate(confirmUploadSchema), filesController.co
 // File management endpoints
 router.get('/', validate(listFilesQuery, 'query'), filesController.listFiles);
 router.get('/trash', filesController.listTrash);
+router.get('/recent', validate(recentFilesQuery, 'query'), filesController.getRecentFiles);
+router.get('/largest', validate(largestFilesQuery, 'query'), filesController.getLargestFiles);
 router.get('/:id', filesController.getFile);
 router.post('/presign-upload', validate(presignUploadSchema), filesController.presignUpload);
 router.get('/:id/download', filesController.downloadFile);

@@ -51,11 +51,21 @@ const listFilesQuery = Joi.object({
   order: Joi.string().valid('ASC', 'DESC', 'asc', 'desc').default('DESC')
 });
 
+const recentFilesQuery = Joi.object({
+  limit: Joi.number().integer().min(1).default(25).custom((value) => Math.min(value, 25))
+});
+
+const largestFilesQuery = Joi.object({
+  limit: Joi.number().integer().min(1).default(10).custom((value) => Math.min(value, 10))
+});
+
 module.exports = {
   presignUploadSchema,
   s3PresignSchema,
   confirmUploadSchema,
   s3WebhookSchema,
   updateFileSchema,
-  listFilesQuery
+  listFilesQuery,
+  recentFilesQuery,
+  largestFilesQuery
 };

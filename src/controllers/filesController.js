@@ -18,7 +18,11 @@ const listFiles = async (req, res, next) => {
       deleted_at: null
     };
 
-    if (folder_id !== undefined) whereClause.folder_id = folder_id;
+    if (folder_id !== undefined) {
+      whereClause.folder_id = folder_id;
+    } else {
+      whereClause.folder_id = null;
+    }
     if (extension) whereClause.extension = extension;
     if (search) whereClause.name = { [Op.iLike]: `%${search}%` };
 
@@ -34,6 +38,60 @@ const listFiles = async (req, res, next) => {
     });
 
     return paginatedResponse(res, rows, count, page, limit, 'Files retrieved successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getRecentFiles = async (req, res, next) => {
+  try {
+    const MAX_LIMIT = 25;
+    const rawLimit = req.query.limit ?? req.query.Limit;
+    const parsedLimit = parseInt(rawLimit, 10);
+    const limit = (!isNaN(parsedLimit) && parsedLimit > 0) ? Math.min(parsedLimit, MAX_LIMIT) : MAX_LIMIT;
+
+    const files = await File.findAll({
+      where: {
+        user_id: req.user.id,
+        deleted_at: null
+      },
+      include: [
+        { model: Tag, as: "tags", through: { attributes: [] } },
+        { model: Folder, as: "folder", attributes: ['id', 'name'] }
+      ],
+      order: [['updated_at', 'DESC']],
+      attributes: ["id", "name", "extension", "size", "folder_id", "thumbnail_path", "is_favorite", "created_at", "updated_at"],
+      limit
+    });
+
+    return successResponse(res, files, 'Recent updated files retrieved successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getLargestFiles = async (req, res, next) => {
+  try {
+    const MAX_LIMIT = 6;
+    const rawLimit = req.query.limit ?? req.query.Limit;
+    const parsedLimit = parseInt(rawLimit, 6);
+    const limit = (!isNaN(parsedLimit) && parsedLimit > 0) ? Math.min(parsedLimit, MAX_LIMIT) : MAX_LIMIT;
+
+    const files = await File.findAll({
+      where: {
+        user_id: req.user.id,
+        deleted_at: null
+      },
+      include: [
+        { model: Tag, as: "tags", through: { attributes: [] } },
+        { model: Folder, as: "folder", attributes: ['id', 'name'] }
+      ],
+      order: [['size', 'DESC']],
+      attributes: ["id", "name", "extension", "size", "folder_id", "thumbnail_path", "is_favorite", "created_at", "updated_at"],
+      limit
+    });
+
+    return successResponse(res, files, 'Largest files retrieved successfully');
   } catch (error) {
     next(error);
   }
@@ -649,6 +707,11 @@ const listTrash = async (req, res, next) => {
 
 module.exports = {
   listFiles,
+  getRecentFiles,
+  listRecent: getRecentFiles,
+  getLargestFiles,
+  listLargest: getLargestFiles,
+  listLargestFiles: getLargestFiles,
   getFile,
   getS3Config,
   s3Presign,
