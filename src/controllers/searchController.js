@@ -6,8 +6,8 @@ const search = async (req, res, next) => {
     try {
         const {
             q, type, folderId, favorite, from, to, tag, label,
-            page = 1, limit = 20, sortBy = 'created_at', sortOrder = 'DESC'
-        } = req.query;
+            page, limit, sortBy, sortOrder
+        } = req.query; 
 
         const offset = (page - 1) * limit;
 
@@ -15,33 +15,32 @@ const search = async (req, res, next) => {
         const folderWhere = { user_id: req.user.id };
 
         if (q) {
-            fileWhere.name = { [Op.iLike]: `%${q.toLowerCase()}%` };
-            folderWhere.name = { [Op.like]: `%${q}%` };
+            // 🛡️ SECURITY PATCH: Cegah Wildcard Injection SQL (sesuai laporan audit)
+            const sanitizedQ = q.replace(/[%_]/g, '\\$&');
+            
+            fileWhere.name = { [Op.iLike]: `%${sanitizedQ}%` };
+            folderWhere.name = { [Op.iLike]: `%${sanitizedQ}%` }; 
         }
 
-        if (type) {
-            fileWhere.extension = type;
-        }
+        if (type) fileWhere.extension = type;
+        if (folderId) folderWhere.parent_id = folderId;
 
-        if (folderId) {
-            // fileWhere.folder_id = folderId;
-            folderWhere.parent_id = folderId;
-        }
-
+        // Tidak perlu "favorite === 'true'" lagi karena Joi sudah mengubahnya jadi Boolean
         if (favorite !== undefined) {
-            fileWhere.is_favorite = favorite === 'true' || favorite === true;
+            fileWhere.is_favorite = favorite; 
         }
 
+        // Tidak perlu "new Date(from)" lagi karena Joi sudah merubahnya jadi Objek Date
         if (from || to) {
             fileWhere.created_at = {};
             folderWhere.created_at = {};
             if (from) {
-                fileWhere.created_at[Op.gte] = new Date(from);
-                folderWhere.created_at[Op.gte] = new Date(from);
+                fileWhere.created_at[Op.gte] = from;
+                folderWhere.created_at[Op.gte] = from;
             }
             if (to) {
-                fileWhere.created_at[Op.lte] = new Date(to);
-                folderWhere.created_at[Op.lte] = new Date(to);
+                fileWhere.created_at[Op.lte] = to;
+                folderWhere.created_at[Op.lte] = to;
             }
         }
 
@@ -58,11 +57,12 @@ const search = async (req, res, next) => {
         let files = { rows: [], count: 0 };
         let folders = { rows: [], count: 0 };
 
+        // 🚀 Tidak perlu parseInt(limit, 10) lagi
         files = await File.findAndCountAll({
             where: fileWhere,
             include: includeTags,
-            limit: parseInt(limit, 10),
-            offset: parseInt(offset, 10),
+            limit,
+            offset,
             order: [[sortBy, sortOrder]]
         });
 
@@ -70,8 +70,8 @@ const search = async (req, res, next) => {
             let folderSortBy = sortBy === 'size' ? 'name' : sortBy;
             folders = await Folder.findAndCountAll({
                 where: folderWhere,
-                limit: parseInt(limit, 10),
-                offset: parseInt(offset, 10),
+                limit,
+                offset,
                 order: [[folderSortBy, sortOrder]]
             });
         }
@@ -80,8 +80,8 @@ const search = async (req, res, next) => {
             files: files.rows,
             folders: folders.rows,
             pagination: {
-                page: parseInt(page, 10),
-                limit: parseInt(limit, 10),
+                page,
+                limit,
                 totalFiles: files.count,
                 totalFolders: folders.count
             }

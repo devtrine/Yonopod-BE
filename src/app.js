@@ -44,5 +44,6 @@ app.use((err, req, res, next) => {
 });
 
 // app.use(errorHandler);
+app.use(limiter);
 
 module.exports = app;

@@ -7,6 +7,6 @@ const { searchSchema } = require('../validators/searchValidator');
 
 router.use(requireAuth);
 
-router.get('/', validate(searchSchema), searchController.search);
+router.get('/', validate(searchSchema, 'query'), searchController.search);
 
 module.exports = router;
