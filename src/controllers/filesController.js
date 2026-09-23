@@ -420,7 +420,7 @@ const permanentDelete = async (req, res, next) => {
 
 const listTrash = async (req, res, next) => {
   try {
-    const { page = 1, limit = 20 } = req.query;
+    const { page, limit } = req.query;
     const offset = (page - 1) * limit;
 
     const { count, rows } = await File.findAndCountAll({

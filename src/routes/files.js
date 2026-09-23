@@ -21,7 +21,7 @@ router.post('/confirm-upload', validate(confirmUploadSchema), filesController.co
 
 // File management endpoints
 router.get('/', validate(listFilesQuery, 'query'), filesController.listFiles);
-router.get('/trash', filesController.listTrash);
+router.get('/trash', validate(listFilesQuery, 'query'), filesController.listTrash);
 router.get('/:id', filesController.getFile);
 router.post('/presign-upload', validate(presignUploadSchema), filesController.presignUpload);
 router.get('/:id/download', filesController.downloadFile);

@@ -21,12 +21,10 @@ const register = async (req, res, next) => {
       if (existing.username === username) throw new ConflictError('Username already in use');
     }
 
-    const password_hash = await bcrypt.hash(password, 12);
-
     const user = await User.create({
       username,
       email,
-      password_hash,
+      password_hash : password,
       full_name,
       created_at: new Date()
     });
@@ -84,8 +82,6 @@ const login = async (req, res, next) => {
         next(error);
       }
     });
-
-
 
     await LoginActivity.create({
       user_id: user.id,
