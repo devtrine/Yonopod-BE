@@ -8,10 +8,21 @@ exports.requireAuth = async (req, res, next) => {
     }
 
     const user = await User.findByPk(req.session.userId);
-    
+
     if (!user || !user.is_active) {
       req.session.destroy();
       return errorResponse(res, 'Unauthorized', 401);
+    }
+    const activeSession = await UserSession.findOne({
+      where: {
+        session_token: req.sessionID,
+        is_active: true
+      }
+    });
+    if (!activeSession) {
+      req.session.destroy();
+      res.clearCookie('connect.sid');
+      throw new UnauthorizedError('Your session has expired or was revoked. Please log in again.');
     }
 
     req.user = user;

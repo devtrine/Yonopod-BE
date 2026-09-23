@@ -9,7 +9,7 @@ const { Op } = require('sequelize');
 const register = async (req, res, next) => {
   try {
     const { username, email, password, full_name } = req.body;
-    
+
     const existing = await User.findOne({
       where: {
         [Op.or]: [{ email }, { username }]
@@ -21,19 +21,17 @@ const register = async (req, res, next) => {
       if (existing.username === username) throw new ConflictError('Username already in use');
     }
 
-    const password_hash = await bcrypt.hash(password, 12);
-    
     const user = await User.create({
       username,
       email,
-      password_hash,
+      password_hash : password,
       full_name,
       created_at: new Date()
     });
 
     const userData = user.toJSON();
     delete userData.password_hash;
-    
+
     return successResponse(res, userData, 'User registered successfully', 201);
   } catch (error) {
     next(error);
@@ -43,7 +41,7 @@ const register = async (req, res, next) => {
 const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
-    
+
     const user = await User.findOne({ where: { email } });
     if (!user) {
       return next(new UnauthorizedError('Invalid credentials'));
@@ -61,16 +59,28 @@ const login = async (req, res, next) => {
       return next(new UnauthorizedError('Invalid credentials'));
     }
 
-    req.session.userId = user.id;
+    req.session.regenerate(async (err) => {
+      if (err) {
+        return next(new Error('Failed to regenerate session'));
+      }
 
-    await UserSession.create({
-      user_id: user.id,
-      session_token: req.sessionID || uuidv4(),
-      ip_address: req.ip,
-      user_agent: req.headers['user-agent'],
-      is_active: true,
-      created_at: new Date(),
-      expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000)
+      try {
+        req.session.userId = user.id;
+
+        await UserSession.create({
+          user_id: user.id,
+          session_token: req.sessionID || uuidv4(),
+          ip_address: req.ip,
+          user_agent: req.headers['user-agent'],
+          is_active: true,
+          created_at: new Date(),
+          expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000)
+        });
+
+        return successResponse(res, user, 'Login successful');
+      } catch (error) {
+        next(error);
+      }
     });
 
     await LoginActivity.create({
@@ -93,10 +103,18 @@ const login = async (req, res, next) => {
 
 const logout = async (req, res, next) => {
   try {
-    if (req.session) {
-      req.session.destroy();
+    if (req.sessionID) {
+      await UserSession.update(
+        { is_active: false },
+        { where: { session_token: req.sessionID } } // Atau sesuaikan dengan nama field di tabelmu
+      );
     }
-    return successResponse(res, null, 'Logged out successfully');
+
+    req.session.destroy((err) => {
+      if (err) return next(new Error('Failed to destroy session'));
+      res.clearCookie('connect.sid'); 
+      return successResponse(res, null, 'Logout successful');
+    });
   } catch (error) {
     next(error);
   }
@@ -115,15 +133,15 @@ const getMe = async (req, res, next) => {
 const updateMe = async (req, res, next) => {
   try {
     const { full_name, avatar_url } = req.body;
-    
+
     if (full_name !== undefined) req.user.full_name = full_name;
     if (avatar_url !== undefined) req.user.avatar_url = avatar_url;
-    
+
     await req.user.save();
-    
+
     const user = req.user.toJSON();
     delete user.password_hash;
-    
+
     return successResponse(res, user, 'Profile updated successfully');
   } catch (error) {
     next(error);
@@ -133,16 +151,16 @@ const updateMe = async (req, res, next) => {
 const changePassword = async (req, res, next) => {
   try {
     const { current_password, new_password } = req.body;
-    
+
     const isMatch = await bcrypt.compare(current_password, req.user.password_hash);
     if (!isMatch) {
       throw new UnauthorizedError('Invalid current password');
     }
-    
+
     const password_hash = await bcrypt.hash(new_password, 12);
     req.user.password_hash = password_hash;
     await req.user.save();
-    
+
     return successResponse(res, null, 'Password changed successfully');
   } catch (error) {
     next(error);
@@ -156,7 +174,7 @@ const forgotPassword = async (req, res, next) => {
     if (!user) {
       return successResponse(res, null, 'If email exists, a reset link will be sent');
     }
-    
+
     const token = uuidv4();
     await PasswordReset.create({
       user_id: user.id,
@@ -164,7 +182,7 @@ const forgotPassword = async (req, res, next) => {
       expires_at: new Date(Date.now() + 60 * 60 * 1000), // 1 hour
       created_at: new Date()
     });
-    
+    await sendResetEmail(user.email, token);
     return successResponse(res, { token }, 'If email exists, a reset link will be sent');
   } catch (error) {
     next(error);
@@ -174,7 +192,7 @@ const forgotPassword = async (req, res, next) => {
 const resetPassword = async (req, res, next) => {
   try {
     const { token, new_password } = req.body;
-    
+
     const resetRecord = await PasswordReset.findOne({
       where: {
         token,
@@ -183,20 +201,20 @@ const resetPassword = async (req, res, next) => {
         }
       }
     });
-    
+
     if (!resetRecord) {
       throw new UnauthorizedError('Invalid or expired reset token');
     }
-    
+
     const user = await User.findByPk(resetRecord.user_id);
     if (!user) throw new NotFoundError('User not found');
-    
+
     const password_hash = await bcrypt.hash(new_password, 12);
     user.password_hash = password_hash;
     await user.save();
-    
+
     await resetRecord.destroy();
-    
+
     return successResponse(res, null, 'Password reset successfully');
   } catch (error) {
     next(error);
@@ -226,7 +244,7 @@ const stats = async (req, res, next) => {
     console.log(response)
 
     return successResponse(res, response, "Success")
-  } catch(error) {
+  } catch (error) {
     next(error)
   }
 }

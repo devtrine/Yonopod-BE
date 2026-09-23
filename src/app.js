@@ -33,16 +33,19 @@ app.use((req, res, next) => {
   res.status(404).json({status : 'error', message: `Cannot ${req.method} ${req.originalUrl}` });
 });
 
-app.use((err, req, res, next) => {
-  const statusCode = err.statusCode || 500;
-  const message = err.message || 'Internal Server Error';
+// Inline error handler for development, but we will use a centralized error handler for production
+// app.use((err, req, res, next) => {
+//   const statusCode = err.statusCode || 500;
+//   const message = err.message || 'Internal Server Error';
 
-  return res.status(statusCode).json({
-    status: 'error',
-    message: message
-  });
-});
+//   return res.status(statusCode).json({
+//     status: 'error',
+//     message: message
+//   });
+// });
 
-// app.use(errorHandler);
+// Centralized error handler for production
+app.use(errorHandler);
+app.use(limiter);
 
 module.exports = app;

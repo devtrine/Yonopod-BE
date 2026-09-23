@@ -1,4 +1,9 @@
 const { WebSocketServer, WebSocket } = require('ws');
+const { User } = require('../models'); // 🛡️ Tambahkan import model User
+
+// 🛡️ SECURITY PATCH 1: Definisikan origin (domain) frontend yang diizinkan
+const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS 
+  ? process.env.ALLOWED_ORIGINS.split(',') : ['http://localhost:3000', 'http://localhost:5000'];
 
 // Store socket connections with Map <user_id, Set<WebSocket>>
 const userSockets = new Map();
@@ -17,24 +22,28 @@ const initWebSocket = (server, sessionMiddleware) => {
     // Only handle websocket connection on /ws (or root if needed)
     const pathname = request.url ? request.url.split('?')[0] : '';
     if (pathname !== '/ws' && pathname !== '/api/v1/ws') {
-      // Not our WS endpoint, return or let other handlers process
       socket.write('HTTP/1.1 404 Not Found\r\n\r\n');
+      socket.destroy();
+      return;
+    }
+
+    // 🛡️ SECURITY PATCH 1: Tolak koneksi jika Origin tidak dikenali (Mencegah CSWSH)
+    const origin = request.headers.origin;
+    if (origin && !ALLOWED_ORIGINS.includes(origin)) {
+      console.warn(`[WS] Rejected connection from unauthorized origin: ${origin}`);
+      socket.write('HTTP/1.1 403 Forbidden\r\n\r\n');
       socket.destroy();
       return;
     }
 
     // Fake response object required by express-session middleware
     const res = {
-      writeHead: () => {},
-      setHeader: () => {},
-      getHeader: () => {},
-      end: () => {},
-      on: () => {},
-      once: () => {},
-      emit: () => {}
+      writeHead: () => {}, setHeader: () => {}, getHeader: () => {},
+      end: () => {}, on: () => {}, once: () => {}, emit: () => {}
     };
 
-    sessionMiddleware(request, res, () => {
+    // 🛡️ Ubah callback ini menjadi 'async' agar bisa memanggil database
+    sessionMiddleware(request, res, async () => {
       // Check if session has authenticated userId
       const userId = request.session ? request.session.userId : null;
 
@@ -44,9 +53,28 @@ const initWebSocket = (server, sessionMiddleware) => {
         return;
       }
 
-      wss.handleUpgrade(request, socket, head, (ws) => {
-        wss.emit('connection', ws, request);
-      });
+      try {
+        // 🛡️ SECURITY PATCH 2: Pastikan pengguna eksis dan akunnya tidak di-banned/non-aktif
+        const user = await User.findByPk(userId, { attributes: ['id', 'is_active'] });
+        
+        if (!user || !user.is_active) {
+          console.warn(`[WS] Rejected connection for inactive/deleted user ID: ${userId}`);
+          socket.write('HTTP/1.1 403 Forbidden\r\n\r\n');
+          socket.destroy();
+          return;
+        }
+
+        // Lolos semua validasi, eksekusi upgrade!
+        wss.handleUpgrade(request, socket, head, (ws) => {
+          wss.emit('connection', ws, request);
+        });
+
+      } catch (error) {
+        // Tangani jika koneksi ke database putus saat proses handshake
+        console.error('[WS] Database error during handshake:', error);
+        socket.write('HTTP/1.1 500 Internal Server Error\r\n\r\n');
+        socket.destroy();
+      }
     });
   });
 
@@ -75,7 +103,7 @@ const initWebSocket = (server, sessionMiddleware) => {
           ws.send(JSON.stringify({ type: 'pong', timestamp: new Date().toISOString() }));
         }
       } catch (err) {
-        console.log(err)
+        console.log(err);
         // Ignore non-json or unhandled messages
       }
     });
