@@ -1,0 +1,15 @@
+info:
+  name: List Recent
+  type: http
+  seq: 8
+
+http:
+  method: GET
+  url: http://localhost:6767/api/v1/files/recent
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -10,6 +10,9 @@ const presignUploadSchema = Joi.object({
 const s3PresignSchema = Joi.object({
   method: Joi.string().valid('PUT', 'POST', 'DELETE', 'GET').required(),
   key: Joi.string().required(),
+  name: Joi.string().optional(),
+  extension: Joi.string().optional().allow(null, ''),
+  folder_id: Joi.string().uuid().optional().allow(null),
   uploadId: Joi.string().optional().allow(null, ''),
   partNumber: Joi.number().integer().min(1).optional().allow(null),
   contentType: Joi.string().optional().allow(null, ''),
@@ -23,8 +26,14 @@ const confirmUploadSchema = Joi.object({
   extension: Joi.string().optional().allow('', null),
   folder_id: Joi.string().uuid().optional().allow(null),
   checksum: Joi.string().optional().allow(null, ''),
-  size: Joi.number().integer().optional().default(0)
+  size: Joi.number().integer().min(0).optional().default(0)
 }).or('key', 'file_key');
+
+const s3WebhookSchema = Joi.object({
+  key: Joi.string().required(),
+  size: Joi.number().integer().min(0).required(),
+  etag: Joi.string().optional().allow(null, '')
+});
 
 const updateFileSchema = Joi.object({
   name: Joi.string().max(255).optional(),
@@ -42,10 +51,21 @@ const listFilesQuery = Joi.object({
   order: Joi.string().valid('ASC', 'DESC', 'asc', 'desc').default('DESC')
 });
 
+const recentFilesQuery = Joi.object({
+  limit: Joi.number().integer().min(1).default(25).custom((value) => Math.min(value, 25))
+});
+
+const largestFilesQuery = Joi.object({
+  limit: Joi.number().integer().min(1).default(10).custom((value) => Math.min(value, 10))
+});
+
 module.exports = {
   presignUploadSchema,
   s3PresignSchema,
   confirmUploadSchema,
+  s3WebhookSchema,
   updateFileSchema,
-  listFilesQuery
+  listFilesQuery,
+  recentFilesQuery,
+  largestFilesQuery
 };

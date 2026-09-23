@@ -3,14 +3,20 @@ const { requireAuth } = require('../middlewares/auth');
 const { validate } = require('../middlewares/validate');
 const { 
   presignUploadSchema, 
-  s3PresignSchema,
+  s3PresignSchema, 
   confirmUploadSchema, 
+  s3WebhookSchema,
   updateFileSchema, 
-  listFilesQuery 
+  listFilesQuery,
+  recentFilesQuery,
+  largestFilesQuery
 } = require('../validators/filesValidator');
 const filesController = require('../controllers/filesController');
 
 const router = express.Router();
+
+// S3 Provider Webhook Endpoint (authenticated via Bearer token)
+router.post('/s3/webhook', validate(s3WebhookSchema), filesController.confirmUploadFromWebhook);
 
 router.use(requireAuth);
 
@@ -21,7 +27,9 @@ router.post('/confirm-upload', validate(confirmUploadSchema), filesController.co
 
 // File management endpoints
 router.get('/', validate(listFilesQuery, 'query'), filesController.listFiles);
-router.get('/trash', validate(listFilesQuery, 'query'), filesController.listTrash);
+router.get('/trash', filesController.listTrash);
+router.get('/recent', validate(recentFilesQuery, 'query'), filesController.getRecentFiles);
+router.get('/largest', validate(largestFilesQuery, 'query'), filesController.getLargestFiles);
 router.get('/:id', filesController.getFile);
 router.post('/presign-upload', validate(presignUploadSchema), filesController.presignUpload);
 router.get('/:id/download', filesController.downloadFile);
